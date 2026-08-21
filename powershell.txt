@@ -1,0 +1,268 @@
+PS C:\Users\Utente\desktop\stm> git status
+On branch master
+nothing to commit, working tree clean
+PS C:\Users\Utente\desktop\stm> git branch --show-current
+master
+PS C:\Users\Utente\desktop\stm> git log -5 --oneline
+2d64f9a (HEAD -> master) feat(entries): implement competition entries CRUD
+66532de fix: restore competition module structure
+8c5ffc0 feat(competition): complete competition CRUD foundation
+404819c Sprint 1.2 - Supabase auth foundation
+b73fb32 Foundation: Next.js + Supabase infrastructure
+PS C:\Users\Utente\desktop\stm>
+PS C:\Users\Utente\desktop\stm> tree app /F /A > stm-app-structure.txt
+PS C:\Users\Utente\desktop\stm> tree lib /F /A > stm-lib-structure.txt
+PS C:\Users\Utente\desktop\stm> tree docs /F /A > stm-docs-structure.txt
+PS C:\Users\Utente\desktop\stm> Get-ChildItem -Path app,lib -Recurse -Include *.ts,*.tsx |
+>> Select-String -Pattern "organizations|organization_id|members|workspace|ensure_personal_workspace" |
+>> Out-File stm-workspace-references.txt
+PS C:\Users\Utente\desktop\stm> Get-ChildItem -Path app,lib -Recurse -Include *.ts,*.tsx |
+>> Select-String -Pattern "getCurrentOrganization|getOrganization|getUserOrganization|currentOrganization|organizationId" |
+>> Out-File stm-organization-helpers.txt
+PS C:\Users\Utente\desktop\stm> Get-ChildItem -Path app,lib -Recurse -Include *.ts,*.tsx |
+>> Select-String -Pattern "CompetitionRepository|competitionRepository|createCompetition|listCompetitions|getCompetition" |
+>> Out-File stm-competition-references.txt
+PS C:\Users\Utente\desktop\stm> Get-ChildItem lib -Recurse | Select-Object FullName
+
+FullName
+--------
+C:\Users\Utente\desktop\stm\lib\auth
+C:\Users\Utente\desktop\stm\lib\supabase
+C:\Users\Utente\desktop\stm\lib\auth\getCurrentMember.ts
+C:\Users\Utente\desktop\stm\lib\auth\getCurrentOrganization.ts
+C:\Users\Utente\desktop\stm\lib\auth\getCurrentUser.ts
+C:\Users\Utente\desktop\stm\lib\auth\requireAuth.ts
+C:\Users\Utente\desktop\stm\lib\supabase\admin.ts
+C:\Users\Utente\desktop\stm\lib\supabase\client.ts
+C:\Users\Utente\desktop\stm\lib\supabase\middleware.ts
+C:\Users\Utente\desktop\stm\lib\supabase\server.ts
+
+
+PS C:\Users\Utente\desktop\stm> Get-ChildItem app -Recurse -Include *competition*,*organization*,*member*,*workspace* |
+>> Select-Object FullName
+
+FullName
+--------
+C:\Users\Utente\desktop\stm\app\competitions
+
+
+PS C:\Users\Utente\desktop\stm> Get-ChildItem lib -Recurse -Directory |
+>> Where-Object { $_.Name -match "repository|repositories" } |
+>> Select-Object FullName
+PS C:\Users\Utente\desktop\stm> New-Item -ItemType Directory -Path docs -Force
+
+
+    Directory: C:\Users\Utente\desktop\stm
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        08/07/2026     14:47                docs
+
+
+PS C:\Users\Utente\desktop\stm> New-Item -ItemType File -Path docs\STM_ARCHITECTURE.md -Force
+
+
+    Directory: C:\Users\Utente\desktop\stm\docs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        12/07/2026     14:13              0 STM_ARCHITECTURE.md
+
+
+PS C:\Users\Utente\desktop\stm> New-Item -ItemType File -Path docs\STM_WORKFLOW.md -Force
+
+
+    Directory: C:\Users\Utente\desktop\stm\docs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        12/07/2026     14:13              0 STM_WORKFLOW.md
+
+
+PS C:\Users\Utente\desktop\stm> New-Item -ItemType File -Path docs\STM_DATA_MODEL.md -Force
+
+
+    Directory: C:\Users\Utente\desktop\stm\docs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        12/07/2026     14:13              0 STM_DATA_MODEL.md
+
+
+PS C:\Users\Utente\desktop\stm> New-Item -ItemType File -Path docs\STM_ROADMAP.md -Force
+
+
+    Directory: C:\Users\Utente\desktop\stm\docs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        12/07/2026     14:13              0 STM_ROADMAP.md
+
+
+PS C:\Users\Utente\desktop\stm> New-Item -ItemType File -Path docs\PORTING_FROM_V1.md -Force^C
+PS C:\Users\Utente\desktop\stm> Get-Content lib\auth\getCurrentOrganization.ts
+import { createClient } from "@/lib/supabase/server"
+
+export async function getCurrentOrganization() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return null
+  }
+
+  const { data, error } = await supabase
+    .from("members")
+    .select(
+      `
+      *,
+      organizations (*)
+      `
+    )
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data.organizations
+}
+PS C:\Users\Utente\desktop\stm> Get-Content lib\auth\getCurrentMember.ts
+import { createClient } from "@/lib/supabase/server"
+
+export async function getCurrentMember() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return null
+  }
+
+  const { data, error } = await supabase
+    .from("members")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data
+}
+PS C:\Users\Utente\desktop\stm> Get-Content lib\auth\getCurrentUser.ts
+import { createClient } from "@/lib/supabase/server"
+
+export async function getCurrentUser() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  return user
+}
+PS C:\Users\Utente\desktop\stm> Get-Content lib\auth\requireAuth.ts
+import { redirect } from "next/navigation"
+import { getCurrentUser } from "./getCurrentUser"
+
+export async function requireAuth() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  return user
+}
+PS C:\Users\Utente\desktop\stm> @(
+>>     "===== lib/auth/getCurrentOrganization.ts ====="
+>>     Get-Content lib\auth\getCurrentOrganization.ts
+>>     ""
+>>     "===== lib/auth/getCurrentMember.ts ====="
+>>     Get-Content lib\auth\getCurrentMember.ts
+>>     ""
+>>     "===== lib/auth/getCurrentUser.ts ====="
+>>     Get-Content lib\auth\getCurrentUser.ts
+>>     ""
+>>     "===== lib/auth/requireAuth.ts ====="
+>>     Get-Content lib\auth\requireAuth.ts
+>>     ""
+>>     "===== lib/supabase/server.ts ====="
+>>     Get-Content lib\supabase\server.ts
+>> ) | Out-File stm-current-auth-files.txt -Encoding utf8
+PS C:\Users\Utente\desktop\stm> tree modules /F /A > stm-modules-structure.txt
+PS C:\Users\Utente\desktop\stm> Get-ChildItem modules -Recurse |
+>> Select-Object FullName
+
+FullName
+--------
+C:\Users\Utente\desktop\stm\modules\auth
+C:\Users\Utente\desktop\stm\modules\competition-entries
+C:\Users\Utente\desktop\stm\modules\competitions
+C:\Users\Utente\desktop\stm\modules\matches
+C:\Users\Utente\desktop\stm\modules\organizations
+C:\Users\Utente\desktop\stm\modules\settings
+C:\Users\Utente\desktop\stm\modules\auth\actions.ts
+C:\Users\Utente\desktop\stm\modules\competition-entries\actions
+C:\Users\Utente\desktop\stm\modules\competition-entries\components
+C:\Users\Utente\desktop\stm\modules\competition-entries\repositories
+C:\Users\Utente\desktop\stm\modules\competition-entries\types.ts
+C:\Users\Utente\desktop\stm\modules\competition-entries\actions\addCompetitionEntry.ts
+C:\Users\Utente\desktop\stm\modules\competition-entries\actions\removeCompetitionEntry.ts
+C:\Users\Utente\desktop\stm\modules\competition-entries\actions\renameCompetitionEntry.ts
+C:\Users\Utente\desktop\stm\modules\competition-entries\components\CompetitionEntriesManager.tsx
+C:\Users\Utente\desktop\stm\modules\competition-entries\repositories\competition-entry.repository.ts
+C:\Users\Utente\desktop\stm\modules\competitions\actions
+C:\Users\Utente\desktop\stm\modules\competitions\components
+C:\Users\Utente\desktop\stm\modules\competitions\repositories
+C:\Users\Utente\desktop\stm\modules\competitions\types.ts
+C:\Users\Utente\desktop\stm\modules\competitions\actions\createCompetition.ts
+C:\Users\Utente\desktop\stm\modules\competitions\actions\getCompetition.ts
+C:\Users\Utente\desktop\stm\modules\competitions\actions\listCompetitions.ts
+C:\Users\Utente\desktop\stm\modules\competitions\components\CompetitionForm.tsx
+C:\Users\Utente\desktop\stm\modules\competitions\repositories\competition.repository.ts
+C:\Users\Utente\desktop\stm\modules\competitions\repositories\mapper.ts
+C:\Users\Utente\desktop\stm\modules\competitions\repositories\validation.ts
+
+
+PS C:\Users\Utente\desktop\stm> Get-ChildItem -Path modules,app,lib -Recurse -Include *.ts,*.tsx |
+>> Select-String -Pattern "organization_id|organizationId|owner_member_id|ownerMemberId|getCurrentOrganization|getCurrentMember" |
+>> Out-File stm-organization-usage-full.txt -Encoding utf8
+PS C:\Users\Utente\desktop\stm> Get-ChildItem modules\competitions -Recurse -Include *.ts,*.tsx |
+>> ForEach-Object {
+>>     "===== $($_.FullName) ====="
+>>     Get-Content $_.FullName
+>>     ""
+>> } | Out-File stm-competition-module-full.txt -Encoding utf8
+PS C:\Users\Utente\desktop\stm> @(
+>>     "===== app/competitions/page.tsx ====="
+>>     Get-Content app\competitions\page.tsx
+>>     ""
+>>     "===== app/competitions/new/page.tsx ====="
+>>     Get-Content app\competitions\new\page.tsx
+>>     ""
+>>     "===== app/competitions/[id]/page.tsx ====="
+>>     Get-Content -LiteralPath "app\competitions\[id]\page.tsx"
+>>     ""
+>>     "===== app/layout.tsx ====="
+>>     Get-Content app\layout.tsx
+>>     ""
+>>     "===== app/page.tsx ====="
+>>     Get-Content app\page.tsx
+>> ) | Out-File stm-current-pages.txt -Encoding utf8
+PS C:\Users\Utente\desktop\stm>

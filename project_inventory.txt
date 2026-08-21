@@ -1,0 +1,32 @@
+﻿.env.local
+.gitignore
+AGENTS.md
+app\favicon.ico
+app\globals.css
+app\layout.tsx
+app\page.tsx
+CLAUDE.md
+docs\00_Project\DOC-000_Documentation_Index.md
+docs\00_Project\DOC-002 – Documentation_Style_Guide.md
+docs\01_Core\ADR-800–What-Is-STM.md
+docs\01_Core\SPEC-100 Foundation.md
+docs\01_Core\SPEC-200–Core-Data-Model.md
+docs\01_Core\SPEC-201-Competition-Workflow.md
+docs\01_Core\SPEC-202-UI-Navigation.md
+docs\02_Reference\REF-700_Product_Glossary.md
+docs\pass.txt
+docs\README.md
+eslint.config.mjs
+export-project-inventory.ps1
+next.config.ts
+next-env.d.ts
+package.json
+package-lock.json
+postcss.config.mjs
+public\file.svg
+public\globe.svg
+public\next.svg
+public\vercel.svg
+public\window.svg
+README.md
+tsconfig.json

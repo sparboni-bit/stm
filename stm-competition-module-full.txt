@@ -1,0 +1,387 @@
+﻿===== C:\Users\Utente\desktop\stm\modules\competitions\actions\createCompetition.ts =====
+"use server"
+
+import { redirect } from "next/navigation"
+import { getCurrentMember } from "@/lib/auth/getCurrentMember"
+import { createCompetition } from "../repositories/competition.repository"
+import type { PlayMode, StructureType } from "../types"
+
+function getDefaultSettings() {
+  return {
+    scoring: {
+      default_mode: "single_set",
+    },
+    courts: [],
+  }
+}
+
+function getDefaultStructure(structureType: StructureType) {
+  return {
+    type: structureType,
+    has_groups:
+      structureType === "round_robin" ||
+      structureType === "round_robin_bracket" ||
+      structureType === "round_robin_bracket_consolation",
+    has_main_bracket:
+      structureType === "single_elimination" ||
+      structureType === "round_robin_bracket" ||
+      structureType === "round_robin_bracket_consolation",
+    has_consolation: structureType === "round_robin_bracket_consolation",
+  }
+}
+
+export async function createCompetitionAction(formData: FormData) {
+  const title = String(formData.get("title") || "").trim()
+  const playMode = String(formData.get("playMode") || "") as PlayMode
+  const structureType = String(
+    formData.get("structureType") || ""
+  ) as StructureType
+
+  if (!title || !playMode || !structureType) {
+    redirect("/competitions/new?error=missing_fields")
+  }
+
+  const member = await getCurrentMember()
+
+  if (!member) {
+    redirect("/login?error=no_active_member")
+  }
+
+  const { data, error } = await createCompetition({
+    organization_id: member.organization_id,
+    owner_member_id: member.id,
+    created_by: member.id,
+    title,
+    play_mode: playMode,
+    structure_type: structureType,
+    settings: getDefaultSettings(),
+    structure: getDefaultStructure(structureType),
+  })
+
+  if (error || !data) {
+    redirect("/competitions/new?error=create_failed")
+  }
+
+  redirect(`/competitions/${data.id}`)
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\actions\getCompetition.ts =====
+"use server"
+
+import { getCompetition } from "../repositories/competition.repository"
+import type { Competition } from "../types"
+
+export async function getCompetitionAction(
+  id: string
+): Promise<Competition | null> {
+  const { data, error } = await getCompetition(id)
+
+  if (error || !data) {
+    return null
+  }
+
+  return data as Competition
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\actions\listCompetitions.ts =====
+"use server"
+
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentMember } from "@/lib/auth/getCurrentMember"
+import type { Competition, CompetitionListResult } from "../types"
+
+function canSeeAllCompetitions(role: string) {
+  return role === "owner" || role === "manager" || role === "viewer"
+}
+
+export async function listCompetitionsAction(): Promise<CompetitionListResult> {
+  const member = await getCurrentMember()
+
+  if (!member) {
+    return {
+      active: [],
+      archived: [],
+    }
+  }
+
+  const supabase = await createClient()
+
+  let query = supabase
+    .from("competitions")
+    .select("*")
+    .eq("organization_id", member.organization_id)
+    .order("created_at", { ascending: false })
+
+  if (!canSeeAllCompetitions(member.role)) {
+    query = query.eq("owner_member_id", member.id)
+  }
+
+  const { data, error } = await query
+
+  if (error || !data) {
+    return {
+      active: [],
+      archived: [],
+    }
+  }
+
+  const competitions = data as Competition[]
+
+  return {
+    active: competitions.filter((competition) => competition.status !== "archived"),
+    archived: competitions.filter(
+      (competition) => competition.status === "archived"
+    ),
+  }
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\components\CompetitionForm.tsx =====
+"use client"
+
+import { createCompetitionAction } from "../actions/createCompetition"
+
+export function CompetitionForm() {
+  return (
+    <form
+      action={createCompetitionAction}
+      className="rounded-2xl border bg-white p-6 shadow-sm space-y-6"
+    >
+      <div>
+        <label className="mb-2 block text-sm font-semibold">
+          Competition Name
+        </label>
+
+        <input
+          name="title"
+          required
+          className="w-full rounded-xl border px-4 py-3"
+        />
+      </div>
+
+      <div>
+        <label className="mb-3 block text-sm font-semibold">
+          Play Mode
+        </label>
+
+        <div className="space-y-2">
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="playMode"
+              value="singles"
+              defaultChecked
+            />
+            Singles
+          </label>
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="playMode"
+              value="doubles"
+            />
+            Doubles
+          </label>
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="playMode"
+              value="individual_doubles"
+            />
+            Individual Doubles
+          </label>
+
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-3 block text-sm font-semibold">
+          Structure
+        </label>
+
+        <div className="space-y-2">
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="structureType"
+              value="single_elimination"
+              defaultChecked
+            />
+            Single Elimination
+          </label>
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="structureType"
+              value="round_robin"
+            />
+            Round Robin
+          </label>
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="structureType"
+              value="round_robin_bracket"
+            />
+            Round Robin + Bracket
+          </label>
+
+          <label className="flex gap-2">
+            <input
+              type="radio"
+              name="structureType"
+              value="round_robin_bracket_consolation"
+            />
+            Round Robin + Bracket + Consolation
+          </label>
+
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+
+        <button
+          type="submit"
+          className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white"
+        >
+          Create Competition
+        </button>
+
+      </div>
+    </form>
+  )
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\repositories\competition.repository.ts =====
+import { createClient } from "@/lib/supabase/server"
+import type { Competition } from "../types"
+
+export async function createCompetition(data: {
+  organization_id: string
+  owner_member_id: string
+  created_by: string
+  title: string
+  play_mode: string
+  structure_type: string
+  settings: object
+  structure: object
+}) {
+  const supabase = await createClient()
+
+  return supabase
+    .from("competitions")
+    .insert({
+      ...data,
+      status: "draft",
+      metadata: {},
+    })
+    .select("id")
+    .single()
+}
+
+export async function getCompetition(id: string) {
+  const supabase = await createClient()
+
+  return supabase
+    .from("competitions")
+    .select("*")
+    .eq("id", id)
+    .single<Competition>()
+}
+
+export async function listCompetitions(organizationId: string) {
+  const supabase = await createClient()
+
+  return supabase
+    .from("competitions")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\repositories\mapper.ts =====
+export function mapCompetition(row: any) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    playMode: row.play_mode,
+    structureType: row.structure_type,
+    status: row.status,
+    ownerMemberId: row.owner_member_id,
+    organizationId: row.organization_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\repositories\validation.ts =====
+export function validateCompetition(data: {
+  title: string
+  playMode: string
+  structureType: string
+}) {
+  const errors: string[] = []
+
+  if (!data.title.trim()) {
+    errors.push("Title is required")
+  }
+
+  if (!data.playMode) {
+    errors.push("Play mode is required")
+  }
+
+  if (!data.structureType) {
+    errors.push("Structure type is required")
+  }
+
+  return errors
+}
+
+===== C:\Users\Utente\desktop\stm\modules\competitions\types.ts =====
+export type PlayMode = "singles" | "doubles" | "individual_doubles"
+
+export type StructureType =
+  | "single_elimination"
+  | "round_robin"
+  | "round_robin_bracket"
+  | "round_robin_bracket_consolation"
+
+export type CompetitionStatus =
+  | "draft"
+  | "configure"
+  | "ready"
+  | "generated"
+  | "running"
+  | "completed"
+  | "archived"
+
+export type Competition = {
+  id: string
+  organization_id: string
+  owner_member_id: string
+  created_by: string | null
+  title: string
+  description: string | null
+  structure_type: StructureType
+  play_mode: PlayMode
+  status: CompetitionStatus
+  start_at: string | null
+  end_at: string | null
+  settings: Record<string, unknown>
+  structure: Record<string, unknown>
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export type CompetitionListResult = {
+  active: Competition[]
+  archived: Competition[]
+}
+
