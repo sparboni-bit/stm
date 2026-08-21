@@ -13,6 +13,11 @@ import {
   saveGuestSingleSetResult,
   undoGuestMatchResult,
 } from "@/modules/guest-storage/services/guestMatch.service"
+import {
+  prepareWebTimerAlarm,
+  startWebTimerAlarm,
+  stopWebTimerAlarm,
+} from "@/modules/stage-timer/alarm/webTimerAlarm"
 
 export type ScoreFormat = "single_set" | "best_of_3"
 
@@ -151,6 +156,7 @@ export function GuestMatchesManager({
         if (value <= 1) {
           window.clearInterval(id)
           setTimerRunning(false)
+          void startWebTimerAlarm()
           return 0
         }
         return value - 1
@@ -158,6 +164,10 @@ export function GuestMatchesManager({
     }, 1000)
     return () => window.clearInterval(id)
   }, [timerRunning])
+
+  useEffect(() => {
+    return () => stopWebTimerAlarm()
+  }, [])
 
   const grouped = useMemo(() => {
     const result = new Map<string, MatchRow[]>()
@@ -213,6 +223,11 @@ export function GuestMatchesManager({
   }
 
   const timerLabel = `${String(Math.floor(remainingSeconds / 60)).padStart(2, "0")}:${String(remainingSeconds % 60).padStart(2, "0")}`
+  const totalTimerSeconds = matchDurationMinutes * 60
+  const timerProgress = Math.max(0, Math.min(1, remainingSeconds / totalTimerSeconds))
+  const timerRadius = 74
+  const timerCircumference = 2 * Math.PI * timerRadius
+  const timerDashOffset = timerCircumference * (1 - timerProgress)
 
   return (
     <section className="border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
@@ -289,14 +304,18 @@ export function GuestMatchesManager({
           {timerOpen ? (
             <div className="border-t border-neutral-200 p-4">
               <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center">
-                <div className="grid h-40 w-40 shrink-0 place-items-center rounded-full border-[10px] border-neutral-950 sm:h-44 sm:w-44">
-                  <div className="font-mono text-4xl font-black tracking-tight text-neutral-950 sm:text-5xl">{timerLabel}</div>
+                <div className="relative grid h-40 w-40 shrink-0 place-items-center sm:h-44 sm:w-44">
+                  <svg viewBox="0 0 168 168" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
+                    <circle cx="84" cy="84" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="10" className="text-neutral-200" />
+                    <circle cx="84" cy="84" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeDasharray={timerCircumference} strokeDashoffset={timerDashOffset} className="text-neutral-950 transition-[stroke-dashoffset] duration-1000 ease-linear" />
+                  </svg>
+                  <div className="relative z-10 font-mono text-4xl font-black tracking-tight text-neutral-950 sm:text-5xl">{timerLabel}</div>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <button type="button" onClick={() => setRemainingSeconds((value) => Math.max(0, value - 60))} className="grid h-11 min-w-11 place-items-center rounded-full border border-neutral-200 px-3 text-xs font-black">−1</button>
-                  <button type="button" onClick={() => { setTimerRunning(false); setRemainingSeconds(matchDurationMinutes * 60) }} aria-label="Reset timer" title="Reset timer" className="grid h-11 w-11 place-items-center rounded-full border border-neutral-200 text-lg font-bold">↶</button>
-                  <button type="button" onClick={() => setTimerRunning((value) => !value)} aria-label={timerRunning ? "Pause timer" : "Start timer"} title={timerRunning ? "Pause timer" : "Start timer"} className="grid h-14 w-14 place-items-center rounded-full border border-neutral-950 bg-[var(--arena-yellow)] text-lg font-black text-neutral-950">{timerRunning ? "Ⅱ" : "▶"}</button>
-                  <button type="button" onClick={() => { setTimerRunning(false); setRemainingSeconds(0) }} aria-label="End timer" title="End timer" className="grid h-11 w-11 place-items-center rounded-full border border-neutral-950 text-base font-black">■</button>
+                  <button type="button" onClick={() => { stopWebTimerAlarm(); setTimerRunning(false); setRemainingSeconds(matchDurationMinutes * 60) }} aria-label="Reset timer" title="Reset timer" className="grid h-11 w-11 place-items-center rounded-full border border-neutral-200 text-lg font-bold">↶</button>
+                  <button type="button" onClick={() => { if (timerRunning) { setTimerRunning(false); return }; stopWebTimerAlarm(); void prepareWebTimerAlarm(); setTimerRunning(true) }} aria-label={timerRunning ? "Pause timer" : "Start timer"} title={timerRunning ? "Pause timer" : "Start timer"} className="grid h-14 w-14 place-items-center rounded-full border border-neutral-950 bg-[var(--arena-yellow)] text-lg font-black text-neutral-950">{timerRunning ? "Ⅱ" : "▶"}</button>
+                  <button type="button" onClick={() => { setTimerRunning(false); setRemainingSeconds(0); void startWebTimerAlarm() }} aria-label="End timer" title="End timer" className="grid h-11 w-11 place-items-center rounded-full border border-neutral-950 text-base font-black">■</button>
                   <button type="button" onClick={() => setRemainingSeconds((value) => value + 60)} className="grid h-11 min-w-11 place-items-center rounded-full border border-neutral-200 px-3 text-xs font-black">+1</button>
                 </div>
               </div>
