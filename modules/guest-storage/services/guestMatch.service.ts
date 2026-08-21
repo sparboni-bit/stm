@@ -282,7 +282,7 @@ function propagateWinner(
 async function saveCompletedResult(input: {
   competitionId: string
   matchId: string
-  winnerSide: MatchSide
+  winnerSide: MatchSide | null
   score: Record<string, unknown>
   finishType: "normal" | "retirement"
   retiredSide: MatchSide | null
@@ -311,7 +311,12 @@ async function saveCompletedResult(input: {
           status: "completed" as const,
           score: input.score,
           winner_side: input.winnerSide,
-          loser_side: input.winnerSide === "A" ? ("B" as const) : ("A" as const),
+          loser_side:
+            input.winnerSide === "A"
+              ? ("B" as const)
+              : input.winnerSide === "B"
+                ? ("A" as const)
+                : null,
           finish_type: input.finishType,
           retired_side: input.retiredSide,
           completed_at: now,
@@ -327,13 +332,17 @@ async function saveCompletedResult(input: {
             winnerEntryIds:
               input.winnerSide === "A"
                 ? sideAEntryIds
-                : sideBEntryIds,
+                : input.winnerSide === "B"
+                  ? sideBEntryIds
+                  : [],
           },
         }
       : item,
   )
 
-  matches = propagateWinner(matches, match, input.winnerSide)
+  if (input.winnerSide) {
+    matches = propagateWinner(matches, match, input.winnerSide)
+  }
 
   const courts = document.courts.map((court) =>
     court.id === match.court_id ? normalizeCourt(court, "available") : court,
@@ -354,13 +363,22 @@ export async function saveGuestSingleSetResult(input: {
       !Number.isSafeInteger(input.scoreB) || input.scoreB < 0) {
     throw new Error("Scores must be non-negative integers.")
   }
-  if (input.scoreA === input.scoreB) {
+  const document = requireDocument(
+    await localStorageGuestAdapter.get(input.competitionId),
+  )
+  const match = requireMatch(document, input.matchId)
+  const stage = document.stages.find((item) => item.id === match.stage_id)
+  const isIndividualRotation = stage?.stageType === "individual_rotation"
+  const isDraw = input.scoreA === input.scoreB
+
+  if (isDraw && !isIndividualRotation) {
     throw new Error("A completed match cannot end in a draw.")
   }
+
   await saveCompletedResult({
     competitionId: input.competitionId,
     matchId: input.matchId,
-    winnerSide: input.scoreA > input.scoreB ? "A" : "B",
+    winnerSide: isDraw ? null : input.scoreA > input.scoreB ? "A" : "B",
     score: {
       format: "single_set",
       scoreA: input.scoreA,
