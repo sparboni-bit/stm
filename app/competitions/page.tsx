@@ -1,197 +1,355 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
-import {
-  AppShell,
-} from "@/components/layout/AppShell"
+import { RegisteredShell } from "@/components/layout/RegisteredShell"
+import { getCurrentWorkspace } from "@/lib/workspace/getCurrentWorkspace"
+import { listCompetitionStagesAction } from "@/modules/competition-stages/actions/listCompetitionStages"
+import { listCompetitionsAction } from "@/modules/competitions/actions/listCompetitions"
+import { DeleteCompetitionButton } from "@/modules/competitions/components/DeleteCompetitionButton"
 
-import {
-  PageHeader,
-} from "@/components/layout/PageHeader"
-
-import {
-  getCurrentWorkspace,
-} from "@/lib/workspace/getCurrentWorkspace"
-
-import {
-  getWorkspaceMemberships,
-} from "@/lib/workspace/getWorkspaceMemberships"
-
-import {
-  listCompetitionsAction,
-} from "@/modules/competitions/actions/listCompetitions"
-
-function formatStructureType(
-  value: string
-) {
-  const labels: Record<string, string> = {
-    single_elimination:
-      "Single Elimination",
-    round_robin:
-      "Round Robin",
-    round_robin_bracket:
-      "Round Robin + Bracket",
-    round_robin_bracket_consolation:
-      "Round Robin + Bracket + Consolation",
-  }
-
-  return labels[value] || value
+type CompetitionsPageProps = {
+  searchParams?: Promise<{
+    view?: string
+    page?: string
+  }>
 }
 
-function formatPlayMode(
-  value: string
-) {
-  const labels: Record<string, string> = {
-    singles: "Singles",
-    doubles: "Doubles",
-    individual_doubles:
-      "Individual Doubles",
+const EVENTS_PER_PAGE = 5
+
+function formatDate(value: string | null) {
+  if (!value) return null
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return null
   }
 
-  return labels[value] || value
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date)
 }
 
-export default async function CompetitionsPage() {
+function formatDateRange(
+  startAt: string | null,
+  endAt: string | null,
+) {
+  const start = formatDate(startAt)
+  const end = formatDate(endAt)
+
+  if (start && end && start !== end) {
+    return `${start} – ${end}`
+  }
+
+  return start ?? end
+}
+
+function buildPageHref(
+  view: "open" | "past",
+  page: number,
+) {
+  return `/competitions?view=${view}&page=${page}`
+}
+
+export default async function CompetitionsPage({
+  searchParams,
+}: CompetitionsPageProps) {
   const currentWorkspace =
     await getCurrentWorkspace()
 
   if (!currentWorkspace) {
     redirect(
-      "/login?error=no_active_workspace"
+      "/login?error=no_active_workspace",
     )
   }
 
-  const memberships =
-    await getWorkspaceMemberships()
+  const query = await searchParams
+
+  const view: "open" | "past" =
+    query?.view === "past"
+      ? "past"
+      : "open"
+
+  const requestedPage = Number.parseInt(
+    query?.page ?? "1",
+    10,
+  )
 
   const competitions =
     await listCompetitionsAction()
 
-  return (
-    <AppShell
-      currentWorkspace={currentWorkspace}
-      memberships={memberships}
-    >
-      <Link
-        href="/"
-        className="mb-4 inline-flex text-sm font-semibold text-slate-500 transition hover:text-slate-900"
-      >
-        ← Home
-      </Link>
+  const allItems =
+    view === "past"
+      ? competitions.archived
+      : competitions.active
 
-      <PageHeader
-        eyebrow="Tournament Management"
-        title="Tournaments"
-        description={`Manage tournaments in ${currentWorkspace.workspace.name}.`}
-        actions={
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      allItems.length / EVENTS_PER_PAGE,
+    ),
+  )
+
+  const currentPage =
+    Number.isFinite(requestedPage) &&
+    requestedPage > 0
+      ? Math.min(
+          requestedPage,
+          totalPages,
+        )
+      : 1
+
+  const startIndex =
+    (currentPage - 1) *
+    EVENTS_PER_PAGE
+
+  const items = allItems.slice(
+    startIndex,
+    startIndex + EVENTS_PER_PAGE,
+  )
+
+  const stageCounts =
+    new Map<string, number>()
+
+  await Promise.all(
+    items.map(async (competition) => {
+      try {
+        const stages =
+          await listCompetitionStagesAction(
+            competition.id,
+          )
+
+        stageCounts.set(
+          competition.id,
+          stages.length,
+        )
+      } catch {
+        stageCounts.set(
+          competition.id,
+          0,
+        )
+      }
+    }),
+  )
+
+  return (
+    <RegisteredShell
+      currentWorkspace={currentWorkspace}
+      activeSection="events"
+    >
+      <div className="mx-auto max-w-4xl">
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              Your account
+            </p>
+
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+              Events
+            </h1>
+
+            <p className="mt-1 max-w-md text-sm leading-5 text-slate-500">
+              All the tournament events
+              you&apos;re organizing.
+            </p>
+          </div>
+
           <Link
             href="/competitions/new"
-            className="inline-flex rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-950 bg-[var(--arena-yellow)] px-4 py-2 text-sm font-black text-slate-950 transition hover:brightness-95"
           >
-            + New Tournament
+            + New Event
           </Link>
-        }
-      />
+        </header>
 
-      <section className="space-y-3">
-        {competitions.active.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl">
-              🏆
-            </div>
+        <nav className="mt-6 grid max-w-sm grid-cols-2 rounded-xl bg-slate-100 p-1">
+          <Link
+            href="/competitions?view=open&page=1"
+            className={[
+              "flex min-h-10 items-center justify-center rounded-lg text-sm font-bold transition",
+              view === "open"
+                ? "bg-white text-slate-950 shadow-sm"
+                : "text-slate-500",
+            ].join(" ")}
+          >
+            Open
+          </Link>
 
-            <h2 className="mt-4 text-lg font-semibold text-slate-900">
-              No tournaments yet
+          <Link
+            href="/competitions?view=past&page=1"
+            className={[
+              "flex min-h-10 items-center justify-center rounded-lg text-sm font-bold transition",
+              view === "past"
+                ? "bg-white text-slate-950 shadow-sm"
+                : "text-slate-500",
+            ].join(" ")}
+          >
+            Past
+          </Link>
+        </nav>
+
+        {allItems.length === 0 ? (
+          <section className="mt-5 rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+            <h2 className="text-lg font-bold text-slate-950">
+              {view === "open"
+                ? "No open events"
+                : "No past events"}
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Create the first tournament in this
-              workspace.
+              {view === "open"
+                ? "Create your first event to start adding stages."
+                : "Past events will appear here."}
             </p>
-
-            <Link
-              href="/competitions/new"
-              className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Create Tournament
-            </Link>
-          </div>
+          </section>
         ) : (
-          competitions.active.map(
-            (competition) => (
-              <Link
-                key={competition.id}
-                href={`/competitions/${competition.id}`}
-                className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-400"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Tournament
-                    </p>
+          <>
+            <section className="mt-5 grid gap-4 lg:grid-cols-2">
+              {items.map(
+                (competition) => {
+                  const stageCount =
+                    stageCounts.get(
+                      competition.id,
+                    ) ?? 0
 
-                    <h2 className="mt-1 truncate text-lg font-semibold text-slate-900">
-                      {competition.title}
-                    </h2>
+                  const dates =
+                    formatDateRange(
+                      competition.start_at,
+                      competition.end_at,
+                    )
 
-                    <p className="mt-2 text-sm text-slate-500">
-                      {competition.play_mode &&
-                      competition.structure_type ? (
-                        <>
-                          {formatPlayMode(
-                            competition.play_mode
-                          )}
-                          {" · "}
-                          {formatStructureType(
-                            competition.structure_type
-                          )}
-                        </>
+                  return (
+                    <article
+                      key={competition.id}
+                      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="min-w-0 text-lg font-black leading-6 text-slate-950">
+                          {
+                            competition.title
+                          }
+                        </h2>
+
+                        <span
+                          className={[
+                            "shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-bold",
+                            view === "open"
+                              ? "bg-[var(--arena-yellow)] text-slate-950"
+                              : "bg-slate-100 text-slate-500",
+                          ].join(" ")}
+                        >
+                          {stageCount}{" "}
+                          {stageCount === 1
+                            ? "stage"
+                            : "stages"}
+
+                          {view === "past"
+                            ? " · ended"
+                            : ""}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-xs font-semibold text-slate-500">
+                        Organizer ·{" "}
+                        {
+                          currentWorkspace
+                            .workspace.name
+                        }
+                      </p>
+
+                      {competition.description ? (
+                        <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-600">
+                          {
+                            competition.description
+                          }
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-sm leading-5 text-slate-400">
+                          No description.
+                        </p>
+                      )}
+
+                      {dates ? (
+                        <div className="mt-3">
+                          <span className="inline-flex items-center rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-600">
+                            🗓️ {dates}
+                          </span>
+                        </div>
                       ) : null}
-                    </p>
-                  </div>
 
-                  <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-600">
-                    {competition.status}
-                  </span>
-                </div>
+                      {view === "open" ? (
+                        <div className="mt-5 flex items-stretch gap-2">
+                          <Link
+                            href={`/competitions/${competition.id}`}
+                            className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-950 bg-neutral-950 px-4 text-sm font-bold text-white transition hover:bg-neutral-800"
+                          >
+                            Open
+                          </Link>
 
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                  <span className="text-xs text-slate-500">
-                    Open tournament
-                  </span>
+                          <DeleteCompetitionButton
+                            competitionId={
+                              competition.id
+                            }
+                            eventTitle={
+                              competition.title
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/competitions/${competition.id}`}
+                          className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-950 bg-white px-4 text-sm font-bold text-slate-950 transition hover:bg-slate-50"
+                        >
+                          View
+                        </Link>
+                      )}
+                    </article>
+                  )
+                },
+              )}
+            </section>
 
-                  <span className="text-sm font-semibold text-slate-900">
-                    Open →
-                  </span>
-                </div>
-              </Link>
-            )
-          )
+            {totalPages > 1 ? (
+              <nav
+                aria-label="Events pagination"
+                className="mt-6 flex items-center justify-center gap-2"
+              >
+                {currentPage > 1 ? (
+                  <Link
+                    href={buildPageHref(
+                      view,
+                      currentPage - 1,
+                    )}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Previous
+                  </Link>
+                ) : null}
+
+                <span className="px-3 text-sm font-semibold text-slate-500">
+                  {currentPage} /{" "}
+                  {totalPages}
+                </span>
+
+                {currentPage <
+                totalPages ? (
+                  <Link
+                    href={buildPageHref(
+                      view,
+                      currentPage + 1,
+                    )}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Next
+                  </Link>
+                ) : null}
+              </nav>
+            ) : null}
+          </>
         )}
-      </section>
-
-      {competitions.archived.length > 0 && (
-        <details className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-            Archived Tournaments (
-            {competitions.archived.length})
-          </summary>
-
-          <div className="mt-4 space-y-2">
-            {competitions.archived.map(
-              (competition) => (
-                <Link
-                  key={competition.id}
-                  href={`/competitions/${competition.id}`}
-                  className="block rounded-xl bg-slate-50 p-3 text-sm font-medium text-slate-700"
-                >
-                  {competition.title}
-                </Link>
-              )
-            )}
-          </div>
-        </details>
-      )}
-    </AppShell>
+      </div>
+    </RegisteredShell>
   )
 }

@@ -7,15 +7,22 @@ export async function resolveIndividualRotationTemplateFamily(input: {
   seedCount: number
   engineVersion?: string
 }) {
-  // A single seed cannot form a seeded partnership, therefore
-  // 0 and 1 seeded players are equivalent for template selection.
-  const canonicalSeedCount = input.seedCount >= 2 ? 2 : 0
+  if (
+    input.seedCount !== 0 &&
+    input.seedCount !== 2 &&
+    input.seedCount !== 4
+  ) {
+    throw new Error(
+      "Individual Rotation templates support 0, 2 or 4 seeded players.",
+    )
+  }
 
   return listIndividualRotationTemplates({
     playerCount: input.playerCount,
     usableCourtCount: input.usableCourtCount,
-    seedCount: canonicalSeedCount,
+    seedCount: input.seedCount,
     engineVersion:
-      input.engineVersion ?? INDIVIDUAL_ROTATION_TEMPLATE_ENGINE_VERSION,
+      input.engineVersion ??
+      INDIVIDUAL_ROTATION_TEMPLATE_ENGINE_VERSION,
   })
 }

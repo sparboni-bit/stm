@@ -52,9 +52,9 @@ export async function signupAction(formData: FormData) {
     },
   })
 
-if (error) {
-  redirect(`/login?error=${encodeURIComponent(error.message)}`)
-}
+  if (error) {
+    redirect(`/login?mode=signup&error=${encodeURIComponent(error.message)}`)
+  }
 
   redirect("/login?message=check_email")
 }
@@ -62,5 +62,5 @@ if (error) {
 export async function logoutAction() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect("/")
+  redirect("/login")
 }

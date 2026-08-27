@@ -1,64 +1,48 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
-import {
-  AppShell,
-} from "@/components/layout/AppShell"
-
-import {
-  getCurrentWorkspace,
-} from "@/lib/workspace/getCurrentWorkspace"
-
-import {
-  getWorkspaceMemberships,
-} from "@/lib/workspace/getWorkspaceMemberships"
-
-import {
-  CompetitionForm,
-} from "@/modules/competitions/components/CompetitionForm"
+import { RegisteredShell } from "@/components/layout/RegisteredShell"
+import { getCurrentWorkspace } from "@/lib/workspace/getCurrentWorkspace"
+import { CompetitionForm } from "@/modules/competitions/components/CompetitionForm"
 
 export default async function NewCompetitionPage() {
-  const currentWorkspace =
-    await getCurrentWorkspace()
+  const currentWorkspace = await getCurrentWorkspace()
 
   if (!currentWorkspace) {
-    redirect(
-      "/login?error=no_active_workspace"
-    )
+    redirect("/login?error=no_active_workspace")
   }
 
-  const memberships =
-    await getWorkspaceMemberships()
-
   return (
-    <AppShell
+    <RegisteredShell
       currentWorkspace={currentWorkspace}
-      memberships={memberships}
+      activeSection="events"
     >
-      <Link
-        href="/competitions"
-        className="mb-4 inline-flex text-sm font-semibold text-slate-500 transition hover:text-slate-900"
-      >
-        ← Tournaments
-      </Link>
-
-      <section className="mx-auto max-w-2xl">
-        <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Tournament
-          </p>
-
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">
-            New Tournament
-          </h1>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Create and configure a new tournament.
-          </p>
+      <div className="mx-auto max-w-3xl">
+        <div className="md:hidden">
+          <Link
+            href="/competitions"
+            className="inline-flex min-h-10 items-center rounded-full border border-slate-950 bg-white px-4 text-sm font-bold text-slate-950"
+          >
+            ← Events
+          </Link>
         </div>
 
-        <CompetitionForm />
-      </section>
-    </AppShell>
+        <header className="mt-5 md:mt-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+            New event
+          </p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+            Create Event
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            A few basic details — you&apos;ll add stages once it&apos;s created.
+          </p>
+        </header>
+
+        <div className="mt-7">
+          <CompetitionForm />
+        </div>
+      </div>
+    </RegisteredShell>
   )
 }

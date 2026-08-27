@@ -247,8 +247,13 @@ export function GuestStageEntriesManager({
               className="h-10 w-10 shrink-0"
             />
             <p className="text-sm leading-5 text-neutral-800">
-              <strong>You&apos;re browsing as a guest.</strong>{" "}
-              Nothing you create is saved — starting over means starting from scratch. Guest mode keeps things simple, with fewer settings than a full account.
+              <strong>How Individual Rotation works.</strong>{" "}
+              Select 4 to 20 players, choose the available courts and optionally mark
+              2 or 4 players as Keep Apart seeds. Pickleball Arena builds each round to distribute
+              playing time and sit-outs as evenly as possible, while rotating partners
+              and opponents and limiting repeated pairings. Seeded players are kept
+              apart whenever possible. Based on the available time and match duration,
+              Pickleball Arena recommends a number of rounds — you can generate fewer or more.
             </p>
           </div>
         </div>
@@ -273,7 +278,8 @@ export function GuestStageEntriesManager({
         </button>
 
         <p className="mt-2 text-sm leading-5 text-slate-500">
-          🚩 Tap the flag to mark an entry as a seed. Seeds are kept apart when matches are generated.
+          🚩 <strong>Keep Apart:</strong> mark 2 or 4 players. Pickleball Arena will avoid pairing
+          them together whenever possible.
         </p>
 
         <div className="mt-4 grid gap-x-6 lg:grid-cols-2">

@@ -30,12 +30,24 @@ function keys(count: number) {
 
 function initialCourtCount(stage: CompetitionStage) {
   const value = stage.settings.courtCount
-  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 4 ? value : 1
+
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 5
+    ? value
+    : 1
 }
 
 function initialRequestedRounds(stage: CompetitionStage) {
   const value = stage.settings.requestedRounds
-  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 12 ? value : 6
+
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 20
+    ? value
+    : 6
 }
 
 export function GuestStageGenerationPanel({
@@ -268,23 +280,47 @@ export function GuestStageGenerationPanel({
   }
 
   if (stage.stageType === "individual_rotation") {
-    const usableCourts = Math.min(courtCount, Math.floor(active.length / 4))
-    const recommendedRounds = Math.max(1, Math.min(12, Math.floor(availableTime / matchDuration)))
-    const recommendedMatches = recommendedRounds * usableCourts
+    const usableCourts = Math.min(
+      5,
+      courtCount,
+      Math.floor(active.length / 4),
+    )
+
+    const recommendedRounds = Math.max(
+      1,
+      Math.min(
+        20,
+        Math.floor(availableTime / matchDuration),
+      ),
+    )
+
+    const selectedMatches =
+      requestedRounds * usableCourts
 
     async function generateIR() {
+      let generated = false
+
       await run(async () => {
         await saveGuestIndividualRotationSettings({
           competitionId,
           stageId: stage.id,
           courtCount,
-          requestedRounds: recommendedRounds,
+          requestedRounds,
           availableTimeMinutes: availableTime,
           matchDurationMinutes: matchDuration,
         })
-        const result = await generateGuestCompetitionStage({ competitionId, stageId: stage.id })
-        setMessage(`${result.matchCount} matches generated in ${result.roundCount} round(s).`)
+
+        await generateGuestCompetitionStage({
+          competitionId,
+          stageId: stage.id,
+        })
+
+        generated = true
       })
+
+      if (generated) {
+        onOpenMatches?.()
+      }
     }
 
     const generationConfirmModal = pendingGeneration === "ir" ? (
@@ -331,23 +367,112 @@ export function GuestStageGenerationPanel({
             </div>
             {!locked && onSelectPlayers ? <button type="button" disabled={working} onClick={onSelectPlayers} className="min-h-10 rounded-xl border border-neutral-950 bg-white px-4 text-sm font-bold">Change</button> : null}
           </div>
-          {stepper("Courts", courtCount, setCourtCount, 1, 4)}
-          {stepper("Available time", availableTime, setAvailableTime, 10, 240, 10, "min")}
-          {stepper("Match duration", matchDuration, setMatchDuration, 1, 60, 1, "min")}
-          {!locked ? <>
-            <div className="mt-4 rounded-2xl border border-neutral-950 bg-yellow-100 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Recommended</p>
-              <p className="mt-1 text-lg font-black">{recommendedRounds} rounds · {recommendedMatches} matches</p>
-            </div>
-            <button type="button" disabled={working || active.length < 4 || usableCourts < 1} onClick={() => setPendingGeneration("ir")} className="mt-5 min-h-12 w-full bg-[var(--arena-yellow)] px-5 text-sm font-black text-neutral-950 disabled:opacity-50 lg:max-w-sm">
-              {working ? "Working..." : "Generate Matches"}
-            </button>
-          </> : (
+          {stepper(
+            "Courts",
+            courtCount,
+            setCourtCount,
+            1,
+            5,
+          )}
+
+          {stepper(
+            "Available time",
+            availableTime,
+            setAvailableTime,
+            10,
+            240,
+            10,
+            "min",
+          )}
+
+          {stepper(
+            "Match duration",
+            matchDuration,
+            setMatchDuration,
+            1,
+            60,
+            1,
+            "min",
+          )}
+
+          {!locked ? (
+            <>
+              <div className="mt-4 rounded-2xl border border-neutral-950 bg-yellow-100 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  Recommended
+                </p>
+
+                <p className="mt-1 text-lg font-black">
+                  {recommendedRounds} rounds ·{" "}
+                  {recommendedRounds * usableCourts} matches
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  Based on the available time and match duration.
+                  You may choose fewer or more rounds.
+                </p>
+              </div>
+
+              <div className="mt-4">
+                {stepper(
+                  "Rounds to generate",
+                  requestedRounds,
+                  setRequestedRounds,
+                  1,
+                  20,
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                    Matches
+                  </p>
+
+                  <p className="mt-1 text-lg font-black text-neutral-950">
+                    {selectedMatches}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                    Courts used
+                  </p>
+
+                  <p className="mt-1 text-lg font-black text-neutral-950">
+                    {usableCourts}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  working ||
+                  active.length < 4 ||
+                  active.length > 20 ||
+                  usableCourts < 1 ||
+                  requestedRounds < 1 ||
+                  requestedRounds > 20
+                }
+                onClick={() =>
+                  setPendingGeneration("ir")
+                }
+                className="mt-5 min-h-12 w-full bg-[var(--arena-yellow)] px-5 text-sm font-black text-neutral-950 disabled:opacity-50 lg:max-w-sm"
+              >
+                {working
+                  ? "Working..."
+                  : "Generate Matches"}
+              </button>
+            </>
+          ) : (
             <div className="mt-5 space-y-3">
               <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
                 {matchCount} generated matches. Stage setup is locked.
               </div>
-              {matchCount > 0 && onOpenMatches ? (
+
+              {matchCount > 0 &&
+              onOpenMatches ? (
                 <button
                   type="button"
                   onClick={onOpenMatches}

@@ -82,18 +82,41 @@ export async function listCompetitionsAction(): Promise<CompetitionListResult> {
   const competitions =
     data as Competition[]
 
+  const now = Date.now()
+
   return {
     active: competitions.filter(
-      (competition) =>
-        competition.status !==
-        "archived"
+      (competition) => {
+        if (!competition.end_at) {
+          return true
+        }
+
+        const endAt = new Date(
+          competition.end_at,
+        ).getTime()
+
+        return (
+          Number.isNaN(endAt) ||
+          endAt >= now
+        )
+      },
     ),
 
-    archived:
-      competitions.filter(
-        (competition) =>
-          competition.status ===
-          "archived"
-      ),
+    archived: competitions.filter(
+      (competition) => {
+        if (!competition.end_at) {
+          return false
+        }
+
+        const endAt = new Date(
+          competition.end_at,
+        ).getTime()
+
+        return (
+          !Number.isNaN(endAt) &&
+          endAt < now
+        )
+      },
+    ),
   }
 }

@@ -283,12 +283,13 @@ export async function generateCompetitionStage(
 
       if (
         seedCount !== 0 &&
-        seedCount !== 2
+        seedCount !== 2 &&
+        seedCount !== 4
       ) {
         return {
           success: false,
           message:
-            "Individual Rotation templates support either 0 or 2 seeded players. Update the Stage seeds before generation.",
+            "Individual Rotation templates support 0, 2 or 4 seeded players. Update the Stage seeds before generation.",
         }
       }
 

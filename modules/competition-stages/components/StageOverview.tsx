@@ -10,8 +10,8 @@ import { StageCompletionPanel } from "./StageCompletionPanel"
 const stageStatusLabels: Record<CompetitionStageStatus, string> = {
   draft: "Draft",
   configured: "Ready",
-  generated: "Ready",
-  running: "In progress",
+  generated: "Generated",
+  running: "Running",
   completed: "Completed",
 }
 
@@ -27,11 +27,11 @@ export function StageOverview({
   const manifest = useManifest()
 
   const items = [
-    { label: "Phase", value: stage.name },
+    { label: "Stage", value: stage.name },
     { label: "Format", value: manifest.name },
     { label: "Status", value: stageStatusLabels[stage.status] },
     {
-      label: "Roster",
+      label: "Players",
       value: entryCount > 0 ? `${entryCount} assigned` : "Not configured",
     },
   ]
@@ -40,7 +40,7 @@ export function StageOverview({
     <section className="space-y-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Phase overview
+          Stega overview
         </p>
 
         <h2 className="mt-1 text-xl font-semibold text-slate-950">

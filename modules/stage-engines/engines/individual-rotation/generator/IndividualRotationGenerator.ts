@@ -41,11 +41,11 @@ export async function generateIndividualRotationSchedule(
     }
   }
 
-  if (entries.length > 16) {
+  if (entries.length > 20) {
     return {
       success: false,
       message:
-        "Individual Rotation supports up to 16 players per Stage. Split larger groups across two or more balanced Individual Rotation Stages.",
+        "Individual Rotation supports up to 20 players per Stage.",
     }
   }
 
@@ -119,11 +119,15 @@ export async function generateIndividualRotationSchedule(
         player.seed > 0,
     ).length
 
-  if (seedCount !== 0 && (seedCount < 2 || seedCount > 4)) {
+  if (
+    seedCount !== 0 &&
+    seedCount !== 2 &&
+    seedCount !== 4
+  ) {
     return {
       success: false,
       message:
-        "Individual Rotation Keep Apart supports 2, 3 or 4 seeded players.",
+        "Individual Rotation Keep Apart supports 0, 2 or 4 seeded players.",
     }
   }
 

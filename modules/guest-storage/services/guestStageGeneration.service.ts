@@ -135,10 +135,10 @@ export async function saveGuestIndividualRotationSettings(input: {
   availableTimeMinutes?: number
   matchDurationMinutes?: number
 }): Promise<void> {
-  if (!Number.isInteger(input.courtCount) || input.courtCount < 1 || input.courtCount > 4) {
-    throw new Error("Individual Rotation court count must be between 1 and 4.")
+  if (!Number.isInteger(input.courtCount) || input.courtCount < 1 || input.courtCount > 5) {
+    throw new Error("Individual Rotation court count must be between 1 and 5.")
   }
-  if (!Number.isInteger(input.requestedRounds) || input.requestedRounds < 1 || input.requestedRounds > 12) {
+  if (!Number.isInteger(input.requestedRounds) || input.requestedRounds < 1 || input.requestedRounds > 20) {
     throw new Error("Individual Rotation rounds must be between 1 and 12.")
   }
   if (
@@ -381,14 +381,14 @@ export async function generateGuestCompetitionStage(input: {
     const courtCount = stage.settings.courtCount
     const requestedRounds = stage.settings.requestedRounds
 
-    if (typeof courtCount !== "number" || !Number.isInteger(courtCount) || courtCount < 1 || courtCount > 4) {
+    if (typeof courtCount !== "number" || !Number.isInteger(courtCount) || courtCount < 1 || courtCount > 5) {
       throw new Error("Configure between 1 and 4 courts before generation.")
     }
-    if (typeof requestedRounds !== "number" || !Number.isInteger(requestedRounds) || requestedRounds < 1 || requestedRounds > 12) {
+    if (typeof requestedRounds !== "number" || !Number.isInteger(requestedRounds) || requestedRounds < 1 || requestedRounds > 20) {
       throw new Error("Choose between 1 and 12 rounds before generation.")
     }
-    if (generationEntries.length < 4 || generationEntries.length > 16) {
-      throw new Error("Individual Rotation requires between 4 and 16 active players.")
+    if (generationEntries.length < 4 || generationEntries.length > 20) {
+      throw new Error("Individual Rotation requires between 4 and 20 active players.")
     }
     if (generationEntries.some((entry) => entry.entryType !== "player")) {
       throw new Error("Individual Rotation supports player entries only.")
@@ -397,8 +397,14 @@ export async function generateGuestCompetitionStage(input: {
     const seedCount = generationEntries.filter(
       (entry) => typeof entry.seed === "number" && entry.seed > 0,
     ).length
-    if (seedCount !== 0 && seedCount !== 2) {
-      throw new Error("Individual Rotation templates support either 0 or 2 seeded players.")
+    if (
+      seedCount !== 0 &&
+      seedCount !== 2 &&
+      seedCount !== 4
+    ) {
+      throw new Error(
+        "Individual Rotation templates support 0, 2 or 4 seeded players.",
+      )
     }
 
     ensureIndividualRotationEngineRegistered()

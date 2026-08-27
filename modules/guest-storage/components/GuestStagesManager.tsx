@@ -58,9 +58,29 @@ function stageStatusLabel(status: CompetitionStage["status"]) {
   if (status === "draft") return "Setup"
   if (status === "configured") return "Ready"
   if (status === "generated") return "Generated"
-  if (status === "running") return "In progress"
+  if (status === "running") return "Running"
   if (status === "completed") return "Completed"
   return status
+}
+
+function stageStatusClass(status: CompetitionStage["status"]) {
+  if (status === "draft") {
+    return "border-slate-200 bg-slate-50 text-slate-600"
+  }
+
+  if (status === "configured") {
+    return "border-amber-300 bg-amber-50 text-amber-900"
+  }
+
+  if (status === "generated") {
+    return "border-sky-200 bg-sky-50 text-sky-800"
+  }
+
+  if (status === "running") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800"
+  }
+
+  return "border-slate-300 bg-slate-200 text-slate-700"
 }
 
 function stagePlayMode(stage: CompetitionStage): "singles" | "doubles" {
@@ -137,7 +157,8 @@ export function GuestStagesManager({
 
   return (
     <div className="mx-auto w-full max-w-[1040px]">
-      <div className="mb-6 rounded-[18px] bg-neutral-100 px-5 py-4">
+      {/* Guest-specific information remains, but uses neutral Arena language. */}
+      <div className="mb-6 rounded-2xl bg-neutral-100 px-5 py-4">
         <div className="flex items-start gap-3">
           <Image
             src="/brand/logo_round_black.png"
@@ -146,8 +167,9 @@ export function GuestStagesManager({
             height={40}
             className="h-10 w-10 shrink-0"
           />
+
           <p className="text-[13px] leading-5 text-neutral-950">
-            <strong>Guest tournament.</strong>{" "}
+            <strong>Guest mode.</strong>{" "}
             You can add as many stages as you like — Individual Rotation,
             Elimination, or Round Robin — and reuse the same player roster
             across all of them, picking whichever players you want for each stage.
@@ -159,10 +181,11 @@ export function GuestStagesManager({
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              Tournament Management
-            </p>
-            <h1 className="mt-1 text-[28px] font-black leading-none tracking-[-0.03em] text-neutral-950 sm:text-[30px]">
               Stages
+            </p>
+
+            <h1 className="mt-1 text-[28px] font-black leading-none tracking-[-0.03em] text-neutral-950 sm:text-[30px]">
+              Event stages
             </h1>
           </div>
 
@@ -170,15 +193,15 @@ export function GuestStagesManager({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="min-h-11 bg-[var(--arena-yellow)] px-4 text-sm font-bold text-[var(--arena-black)]"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-950 bg-[var(--arena-yellow)] px-4 text-sm font-black text-[var(--arena-black)] transition hover:brightness-95"
             >
-              + Add Stage
+              + Add stage
             </button>
           ) : null}
         </div>
 
         {error ? (
-          <div className="mt-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         ) : null}
@@ -186,16 +209,20 @@ export function GuestStagesManager({
         {adding ? (
           <form
             onSubmit={handleCreate}
-            className="mt-4 border border-neutral-200 bg-neutral-50 p-5 sm:max-w-[620px]"
+            className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:max-w-[620px] sm:p-5"
           >
-            <h2 className="text-lg font-bold text-neutral-950">
-              Add Stage
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              New stage
+            </p>
+
+            <h2 className="mt-1 text-lg font-black text-neutral-950">
+              Add stage
             </h2>
 
             <div className="mt-4">
               <label
                 htmlFor="guest-stage-type"
-                className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-neutral-950"
+                className="mb-2 block text-xs font-black uppercase tracking-wide text-neutral-950"
               >
                 Format
               </label>
@@ -210,7 +237,7 @@ export function GuestStagesManager({
                   )
                   setName("")
                 }}
-                className="min-h-[46px] w-full border border-neutral-300 bg-white px-3 text-sm font-semibold"
+                className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-slate-950 disabled:bg-slate-100"
               >
                 {availableStageTypes.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -223,10 +250,10 @@ export function GuestStagesManager({
             <div className="mt-4">
               <label
                 htmlFor="guest-stage-name"
-                className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-neutral-950"
+                className="mb-2 block text-xs font-black uppercase tracking-wide text-neutral-950"
               >
-                Name{" "}
-                <span className="font-normal normal-case text-slate-500">
+                Stage name{" "}
+                <span className="font-medium normal-case text-slate-500">
                   (optional)
                 </span>
               </label>
@@ -237,15 +264,15 @@ export function GuestStagesManager({
                 disabled={working}
                 onChange={(event) => setName(event.target.value)}
                 placeholder={suggestedName}
-                className="min-h-[46px] w-full border border-neutral-300 bg-white px-3 text-sm"
+                className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-slate-950 disabled:bg-slate-100"
               />
             </div>
 
             <button
               disabled={working}
-              className="mt-4 min-h-[46px] w-full bg-[var(--arena-yellow)] px-4 text-sm font-bold text-[var(--arena-black)] disabled:opacity-50"
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-950 bg-[var(--arena-yellow)] px-4 text-sm font-black text-[var(--arena-black)] transition hover:brightness-95 disabled:opacity-50"
             >
-              Add Stage
+              {working ? "Working..." : "Add stage"}
             </button>
           </form>
         ) : null}
@@ -254,17 +281,37 @@ export function GuestStagesManager({
           <strong className="font-bold text-neutral-950">
             {roster.length} player{roster.length === 1 ? "" : "s"}
           </strong>{" "}
-          available in the Tournament roster.
+          available in the roster.
+          {onOpenRoster ? (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={onOpenRoster}
+                className="font-bold text-neutral-950 underline underline-offset-2"
+              >
+                Open roster
+              </button>
+            </>
+          ) : null}
         </p>
       </section>
 
       {stages.length > 0 ? (
-        <section className="mt-5">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-            Select the working stage
-          </p>
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Stages
+            </h2>
 
-          <div className="grid gap-4 md:grid-cols-2">
+            <p className="mt-1 text-sm text-slate-500">
+              {stages.length === 1
+                ? "1 stage configured."
+                : `${stages.length} stages configured.`}
+            </p>
+          </div>
+
+          <ol className="mt-5 space-y-3">
             {stages.map((stage) => {
               const assignedEntries = stageEntries.filter(
                 (item) => item.stage_id === stage.id,
@@ -281,22 +328,26 @@ export function GuestStagesManager({
               ).length
 
               return (
-                <article
+                <li
                   key={stage.id}
-                  className="border border-neutral-200 bg-white p-4"
+                  className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <button
                     type="button"
                     onClick={() => onOpenStage(stage.id)}
-                    className="block w-full text-left"
+                    className="flex min-w-0 flex-1 items-start gap-4 text-left"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-neutral-950 text-sm font-black text-[var(--arena-yellow)]">
-                        {stage.sortOrder}
-                      </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-sm font-black text-[var(--arena-yellow)]">
+                      {stage.sortOrder}
+                    </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    <div className="min-w-0">
+                      <p className="break-words text-base font-bold text-slate-950">
+                        {stage.name}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {stageTypeLabel(stage.stageType)}
                           {stage.stageType !== "individual_rotation"
                             ? ` · ${
@@ -305,75 +356,72 @@ export function GuestStagesManager({
                                   : "Singles"
                               }`
                             : ""}
-                        </p>
+                        </span>
 
-                        <h2 className="mt-0.5 break-words text-lg font-black leading-tight text-neutral-950">
-                          {stage.name}
-                        </h2>
-
-                        <p className="mt-1 text-sm text-slate-500">
-                          {assignedEntries} {entryLabel}
-                          {assignedEntries === 1 ? "" : "s"}
-                          {matchCount > 0
-                            ? ` · ${matchCount} matches`
-                            : ""}
-                          {" · "}
+                        <span
+                          className={[
+                            "rounded-lg border px-2.5 py-1 text-xs font-bold",
+                            stageStatusClass(stage.status),
+                          ].join(" ")}
+                        >
                           {stageStatusLabel(stage.status)}
-                        </p>
+                        </span>
                       </div>
 
-                      <span
-                        aria-hidden="true"
-                        className="shrink-0 text-xl leading-none text-slate-500"
-                      >
-                        ›
-                      </span>
+                      <p className="mt-2 text-sm text-slate-500">
+                        {assignedEntries} {entryLabel}
+                        {assignedEntries === 1 ? "" : "s"}
+                        {matchCount > 0 ? ` · ${matchCount} matches` : ""}
+                      </p>
                     </div>
                   </button>
 
-                  <div className="mt-3 flex items-center justify-between border-t border-neutral-200 pt-3">
+                  <div className="flex w-full items-center gap-2 sm:w-auto">
                     <button
                       type="button"
                       onClick={() => onOpenStage(stage.id)}
-                      className="min-h-9 rounded-[7px] bg-neutral-950 px-5 text-sm font-bold text-white"
+                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800 sm:flex-none"
                     >
-                      Open
+                      Open stage
                     </button>
 
                     <button
                       type="button"
                       disabled={working}
                       onClick={() => setStageToDelete(stage)}
-                      className="px-2 py-2 text-xs font-semibold text-slate-500 hover:text-red-700"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                     >
                       Delete
                     </button>
                   </div>
-                </article>
+                </li>
               )
             })}
-          </div>
+          </ol>
         </section>
       ) : (
         !adding ? (
-          <section className="mt-5 border border-dashed border-neutral-300 px-4 py-10 text-center">
-            <p className="font-bold text-neutral-950">
+          <section className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+            <p className="text-base font-semibold text-slate-900">
               No stages yet
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Create your first tournament stage.
+
+            <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
+              Add the first stage and choose its format. A simple event may need
+              only one stage.
             </p>
+
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="mt-4 min-h-11 bg-[var(--arena-yellow)] px-5 text-sm font-bold text-[var(--arena-black)]"
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-950 bg-[var(--arena-yellow)] px-5 text-sm font-black text-[var(--arena-black)]"
             >
-              + Add Stage
+              + Add stage
             </button>
           </section>
         ) : null
       )}
-    
+
       {stageToDelete ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="guest-delete-stage-title" className="w-full max-w-sm rounded-[18px] border border-neutral-200 bg-white p-5 shadow-2xl">
@@ -409,6 +457,7 @@ export function GuestStagesManager({
           </div>
         </div>
       ) : null}
-</div>
+
+    </div>
   )
 }

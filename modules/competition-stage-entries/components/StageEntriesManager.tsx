@@ -22,6 +22,15 @@ import type {
   CompetitionStageEntry,
 } from "../types"
 
+import type {
+  Roster,
+} from "@/modules/rosters/types"
+
+import {
+  SavedRosterPicker,
+} from "@/modules/rosters/components/SavedRosterPicker"
+
+
 import {
   assignStageEntriesAction,
   removeAllStageEntriesAction,
@@ -34,6 +43,7 @@ type Props = {
   stageId: string
   roster: CompetitionEntry[]
   stageEntries: CompetitionStageEntry[]
+  savedRosters: Roster[]
   locked: boolean
 }
 
@@ -42,6 +52,7 @@ export function StageEntriesManager({
   stageId,
   roster,
   stageEntries,
+  savedRosters,
   locked,
 }: Props) {
   const router = useRouter()
@@ -222,7 +233,7 @@ export function StageEntriesManager({
 
     if (selectedTypes.size > 1) {
       setError(
-        "A phase cannot mix Singles and Doubles. Select only players or only teams.",
+        "A stage cannot mix Singles and Doubles. Select only players or only teams.",
       )
       return
     }
@@ -232,7 +243,7 @@ export function StageEntriesManager({
       selectedTypes.has("team")
     ) {
       setError(
-        "This phase is Singles. Remove its current participants before assigning Doubles teams.",
+        "This stage is Singles. Remove its current participants before assigning Doubles teams.",
       )
       return
     }
@@ -242,7 +253,7 @@ export function StageEntriesManager({
       selectedTypes.has("player")
     ) {
       setError(
-        "This phase is Doubles. Remove its current participants before assigning Singles players.",
+        "This stage is Doubles. Remove its current participants before assigning Singles players.",
       )
       return
     }
@@ -333,11 +344,244 @@ export function StageEntriesManager({
       await generateStage()
 
       setMessage(
-        "Phase generated successfully.",
+        "Stage generated successfully.",
       )
 
       router.refresh()
     })
+  }
+
+  if (stage.stageType === "individual_rotation") {
+    const players = roster.filter(
+      (entry) =>
+        entry.status === "active" &&
+        entry.entry_type === "player",
+    )
+
+    const activeIds = new Set(
+      activeStageEntries.map(
+        (item) => item.competition_entry_id,
+      ),
+    )
+
+    const allSelected =
+      players.length > 0 &&
+      players.every((entry) =>
+        activeIds.has(entry.id),
+      )
+
+    function toggleProtected(
+      stageEntry: CompetitionStageEntry,
+    ) {
+      const protectedPlayer =
+        stageEntry.seed !== null
+
+      const nextSeed = protectedPlayer
+        ? null
+        : Math.max(
+            1,
+            ...activeStageEntries
+              .map((item) => item.seed ?? 0),
+          ) + 1
+
+      run(async () => {
+        await setStageEntrySeedAction(
+          competitionId,
+          stageId,
+          stageEntry.id,
+          nextSeed,
+        )
+        router.refresh()
+      })
+    }
+
+    return (
+      <section className="bg-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          Players
+        </p>
+
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
+          Select Players
+        </h1>
+
+        <SavedRosterPicker
+          competitionId={competitionId}
+          stageId={stageId}
+          savedRosters={savedRosters}
+          disabled={controlsDisabled}
+          onImported={() => router.refresh()}
+        />
+
+        <div className="mt-5 rounded-2xl bg-neutral-100 p-4">
+          <p className="text-sm leading-5 text-neutral-800">
+            <strong>How Individual Rotation works.</strong>{" "}
+            Select 4 to 20 players, choose the available courts and optionally mark
+            2 or 4 players as Keep Apart seeds. Pickleball Arena builds each round to distribute
+            playing time and sit-outs as evenly as possible, while rotating partners
+            and opponents and limiting repeated pairings. Seeded players are kept
+            apart whenever possible. Based on the available time and match duration,
+            Pickleball Arena recommends a number of rounds — you can generate fewer or more.
+          </p>
+        </div>
+
+        {error ? (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        {message ? (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+            {message}
+          </div>
+        ) : null}
+
+        {isLocked ? (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">
+            This stage has already been generated. Players and seeds are locked.
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={controlsDisabled || players.length === 0}
+          onClick={() => {
+            if (allSelected) {
+              run(async () => {
+                await removeAllStageEntriesAction(
+                  competitionId,
+                  stageId,
+                )
+                router.refresh()
+              })
+            } else {
+              const missingIds = players
+                .filter(
+                  (entry) =>
+                    !activeIds.has(entry.id),
+                )
+                .map((entry) => entry.id)
+
+              if (missingIds.length === 0) return
+
+              run(async () => {
+                await assignStageEntriesAction(
+                  competitionId,
+                  stageId,
+                  missingIds,
+                )
+                router.refresh()
+              })
+            }
+          }}
+          className="mt-6 inline-flex min-h-11 items-center gap-3 font-bold disabled:opacity-50"
+        >
+          <span className="grid h-6 w-6 place-items-center rounded-md border border-neutral-950 bg-[var(--arena-yellow)] text-sm">
+            ✓
+          </span>
+          {allSelected ? "Deselect All" : "Select All"}
+        </button>
+
+        <p className="mt-2 text-sm leading-5 text-slate-500">
+          🚩 <strong>Keep Apart:</strong> mark 2 or 4 players. Pickleball Arena will avoid pairing
+          them together whenever possible.
+        </p>
+
+        <div className="mt-4 grid gap-x-6 lg:grid-cols-2">
+          {players.map((entry) => {
+            const stageEntry =
+              activeStageEntries.find(
+                (item) =>
+                  item.competition_entry_id ===
+                  entry.id,
+              )
+
+            const checked = Boolean(stageEntry)
+            const protectedPlayer =
+              stageEntry?.seed !== null &&
+              stageEntry?.seed !== undefined
+
+            return (
+              <div
+                key={entry.id}
+                className="flex min-h-14 items-center gap-3 border-b border-neutral-200"
+              >
+                <button
+                  type="button"
+                  disabled={controlsDisabled}
+                  onClick={() => {
+                    if (stageEntry) {
+                      run(async () => {
+                        await removeStageEntryAction(
+                          competitionId,
+                          stageId,
+                          stageEntry.id,
+                        )
+                        router.refresh()
+                      })
+                    } else {
+                      run(async () => {
+                        await assignStageEntriesAction(
+                          competitionId,
+                          stageId,
+                          [entry.id],
+                        )
+                        router.refresh()
+                      })
+                    }
+                  }}
+                  className={[
+                    "grid h-6 w-6 shrink-0 place-items-center rounded-md border border-neutral-950 text-sm font-black",
+                    checked
+                      ? "bg-[var(--arena-yellow)]"
+                      : "bg-white",
+                  ].join(" ")}
+                >
+                  {checked ? "✓" : ""}
+                </button>
+
+                <span className="min-w-0 flex-1 truncate font-bold text-neutral-950">
+                  {entry.display_name}
+                </span>
+
+                <button
+                  type="button"
+                  aria-label={`Keep ${entry.display_name} apart`}
+                  disabled={
+                    controlsDisabled ||
+                    !stageEntry
+                  }
+                  onClick={() => {
+                    if (stageEntry) {
+                      toggleProtected(stageEntry)
+                    }
+                  }}
+                  className={[
+                    "grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-sm font-bold",
+                    protectedPlayer
+                      ? "border-neutral-950 bg-[var(--arena-yellow)] text-neutral-950"
+                      : "border-neutral-200 bg-white text-neutral-500",
+                    !stageEntry ? "opacity-40" : "",
+                  ].join(" ")}
+                >
+                  ⚑
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <p className="text-sm text-slate-500">
+            {activeStageEntries.length} players selected
+          </p>
+          <span className="text-xs font-bold text-slate-500">
+            Keep Apart {seededCount} / 4
+          </span>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -348,7 +592,7 @@ export function StageEntriesManager({
         </h2>
 
         <p className="mt-1 text-sm text-slate-500">
-          Choose who plays in this phase and set seeds when needed.
+          Choose who plays in this stage and set seeds when needed.
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -368,16 +612,24 @@ export function StageEntriesManager({
         </div>
       </div>
 
+      <SavedRosterPicker
+        competitionId={competitionId}
+        stageId={stageId}
+        savedRosters={savedRosters}
+        disabled={controlsDisabled}
+        onImported={() => router.refresh()}
+      />
+
       {hasMixedEntryTypes && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          This phase contains both Singles and Doubles participants.
-          Remove one type before generating the phase.
+          This stage contains both Singles and Doubles participants.
+          Remove one type before generating the stage.
         </div>
       )}
 
       {isLocked && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">
-          This phase has already been generated.
+          This stage has already been generated.
           Roster and seeds are locked.
         </div>
       )}
@@ -506,7 +758,7 @@ export function StageEntriesManager({
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h3 className="font-semibold text-slate-900">
-                In this phase
+                In this stage
               </h3>
 
               <p className="text-xs text-slate-500">
@@ -523,7 +775,7 @@ export function StageEntriesManager({
               onClick={() => {
                 if (
                   !window.confirm(
-                    "Remove all participants from this phase?",
+                    "Remove all participants from this stage?",
                   )
                 ) {
                   return
@@ -656,7 +908,7 @@ export function StageEntriesManager({
             {stageEntries.length ===
               0 && (
               <p className="py-6 text-center text-sm text-slate-500">
-                No participants in this phase.
+                No participants in this stage.
               </p>
             )}
           </div>
@@ -716,7 +968,7 @@ export function StageEntriesManager({
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                Generate the phase using the participants and seeds shown above.
+                Generate the stage using the participants and seeds shown above.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -753,8 +1005,8 @@ export function StageEntriesManager({
               {isPending
                 ? "Generating..."
                 : isLocked
-                  ? "Phase generated"
-                  : "Generate phase"}
+                  ? "Stage generated"
+                  : "Generate stage"}
             </button>
           </div>
         </div>
