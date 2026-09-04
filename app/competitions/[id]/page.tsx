@@ -2,12 +2,11 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
 import { RegisteredShell } from "@/components/layout/RegisteredShell"
+import type { CompetitionEntry } from "@/modules/competition-entries/types"
 import { getCompetitionAction } from "@/modules/competitions/actions/getCompetition"
 import { getCurrentWorkspace } from "@/lib/workspace/getCurrentWorkspace"
-import { getCompetitionStatistics } from "@/modules/competitions/repositories/competition-statistics.repository"
 import { CompetitionSectionRenderer } from "@/modules/competitions/components/CompetitionSectionRenderer"
 import { CompetitionEventHeader } from "@/modules/competitions/components/CompetitionEventHeader"
-import { listCompetitionEntries } from "@/modules/competition-entries/repositories/competition-entry.repository"
 import { listCompetitionStages } from "@/modules/competition-stages/repositories/competition-stage.repository"
 
 type CompetitionDetailPageProps = {
@@ -19,13 +18,8 @@ type CompetitionDetailPageProps = {
   }>
 }
 
-const operationalSections = [
-  { key: "configuration", label: "Home" },
+const sections = [
   { key: "stages", label: "Stages" },
-] as const
-
-const resultsSections = [
-  { key: "reports", label: "Results" },
 ] as const
 
 export default async function CompetitionDetailPage({
@@ -46,44 +40,21 @@ export default async function CompetitionDetailPage({
     notFound()
   }
 
-  const isResultsOnly = ["completed", "archived"].includes(
-    competition.status,
-  )
-
-  const sections = isResultsOnly
-    ? resultsSections
-    : operationalSections
+  const isClosed =
+    competition.is_closed === true
 
   const validSection =
     sections.find((section) => section.key === query?.section)?.key ??
-    (isResultsOnly ? "reports" : "stages")
+    "stages"
 
-  const isHome = validSection === "configuration"
+  const entries: CompetitionEntry[] = []
 
-  const [
-    statistics,
-    entries,
-    stages,
-  ] = await Promise.all([
-    isHome
-      ? getCompetitionStatistics(
+  const stages =
+    validSection === "stages"
+      ? await listCompetitionStages(
           competition.id,
         )
-      : Promise.resolve(null),
-
-    isHome
-      ? listCompetitionEntries(
-          competition.id,
-        )
-      : Promise.resolve([]),
-
-    validSection === "stages" ||
-    isHome
-      ? listCompetitionStages(
-          competition.id,
-        )
-      : Promise.resolve([]),
-  ])
+      : []
 
   const locked = [
     "completed",
@@ -103,7 +74,7 @@ export default async function CompetitionDetailPage({
         })),
       }}
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto w-full max-w-7xl">
         <div className="md:hidden">
           <Link
             href="/competitions"
@@ -120,60 +91,42 @@ export default async function CompetitionDetailPage({
           startAt={competition.start_at}
           endAt={competition.end_at}
           organizerName={currentWorkspace.workspace.name}
-          readOnly={isResultsOnly}
+          isClosed={competition.is_closed}
+          readOnly={false}
         />
 
-        {!isResultsOnly ? (
-          <nav className="mt-6 grid grid-cols-3 gap-2 md:hidden">
-            {operationalSections.map((section) => (
-              <Link
-                key={section.key}
-                href={`/competitions/${competition.id}?section=${section.key}`}
-                className={[
-                  "flex min-h-11 items-center justify-center rounded-xl border px-2 text-xs font-bold",
-                  validSection === section.key
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-slate-300 bg-white text-slate-950",
-                ].join(" ")}
-              >
-                {section.label}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
+        <nav className="mt-6 grid grid-cols-3 gap-2 md:hidden">
+          {sections.map((section) => (
+            <Link
+              key={section.key}
+              href={`/competitions/${competition.id}?section=${section.key}`}
+              className={[
+                "flex min-h-11 items-center justify-center rounded-xl border px-2 text-xs font-bold",
+                validSection === section.key
+                  ? "border-neutral-900 bg-neutral-900 text-white"
+                  : "border-slate-300 bg-white text-slate-950",
+              ].join(" ")}
+            >
+              {section.label}
+            </Link>
+          ))}
+        </nav>
 
-        {isHome && statistics ? (
-          <div className="mt-6 grid grid-cols-4 divide-x divide-slate-200 rounded-2xl border border-slate-200 bg-white">
-            {[
-              { label: "Players", value: entries.length },
-              { label: "Matches", value: statistics.matches },
-              { label: "Courts", value: statistics.courts },
-              { label: "Stages", value: stages.length },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="min-w-0 px-2 py-4 text-center"
-              >
-                <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400 sm:text-xs">
-                  {item.label}
-                </p>
-                <p className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : null}
+        {isClosed ? (
+          <section className="mt-6 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                Event status
+              </p>
 
-        {isResultsOnly ? (
-          <section className="mt-6 rounded-2xl bg-slate-50 px-4 py-4">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              Event results
-            </p>
+              <p className="mt-1 text-sm leading-5 text-slate-600">
+                This event is closed and appears in Past Events. Its stages and results remain available.
+              </p>
+            </div>
 
-            <p className="mt-1 text-sm leading-5 text-slate-600">
-              This event is closed. Operational setup is hidden; final results remain available for consultation.
-            </p>
+            <span className="inline-flex w-fit rounded-lg bg-slate-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-700">
+              Closed
+            </span>
           </section>
         ) : null}
 

@@ -4,70 +4,24 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useStage } from "../../competition-stages/hooks"
 import { listStageMatchesAction } from "../actions"
-import type { MatchDetailView } from "../view"
 import {
   buildIndividualRotationStandings,
-  type IndividualRotationStandingRow,
 } from "../standings/individualRotationStandings"
+import type { MatchDetailView } from "../view"
 
-export function IndividualRotationStandingsTable({
-  rows,
-  compact = false,
-}: {
-  rows: IndividualRotationStandingRow[]
-  compact?: boolean
-}) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-slate-300 bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-            <th className="px-3 py-3">#</th>
-            <th className="px-3 py-3">Player</th>
-            <th className="px-3 py-3 text-center">P</th>
-            <th className="px-3 py-3 text-center">W</th>
-            <th className="px-3 py-3 text-center">D</th>
-            <th className="px-3 py-3 text-center">L</th>
-            <th className="px-3 py-3 text-center">PF</th>
-            <th className="px-3 py-3 text-center">PA</th>
-            <th className="px-3 py-3 text-center">Diff</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.entryId} className="border-b border-slate-200 last:border-b-0">
-              <td className="px-3 py-3 font-semibold text-slate-500">
-                {row.played > 0 ? index + 1 : "–"}
-              </td>
-              <td className="px-3 py-3 font-semibold text-slate-900">{row.displayName}</td>
-              <td className="px-3 py-3 text-center tabular-nums">{row.played}</td>
-              <td className="px-3 py-3 text-center tabular-nums">{row.won}</td>
-              <td className="px-3 py-3 text-center tabular-nums">{row.drawn}</td>
-              <td className="px-3 py-3 text-center tabular-nums">{row.lost}</td>
-              <td className="px-3 py-3 text-center tabular-nums">{row.pointsFor}</td>
-              <td className="px-3 py-3 text-center tabular-nums">{row.pointsAgainst}</td>
-              <td className="px-3 py-3 text-center font-semibold tabular-nums">
-                {row.diff > 0 ? `+${row.diff}` : row.diff}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {!compact ? (
-        <p className="border-t border-slate-200 px-3 py-3 text-xs text-slate-500">
-          Ranking order: wins, point difference, points for, player name.
-        </p>
-      ) : null}
-    </div>
-  )
+function signed(value: number) {
+  return value > 0 ? `+${value}` : String(value)
 }
 
 export function IndividualRotationRankingSection() {
   const stage = useStage()
-  const [matches, setMatches] = useState<MatchDetailView[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+
+  const [matches, setMatches] =
+    useState<MatchDetailView[]>([])
+  const [loading, setLoading] =
+    useState(true)
+  const [error, setError] =
+    useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -77,72 +31,192 @@ export function IndividualRotationRankingSection() {
       setError(null)
 
       try {
-        const result = await listStageMatchesAction(stage.id)
-        if (active) setMatches(result)
+        const result =
+          await listStageMatchesAction(stage.id)
+
+        if (active) {
+          setMatches(result)
+        }
       } catch (caughtError) {
         if (active) {
           setError(
             caughtError instanceof Error
               ? caughtError.message
-              : "Unable to load ranking.",
+              : "Unable to load standings.",
           )
         }
       } finally {
-        if (active) setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     void load()
-    return () => { active = false }
+
+    return () => {
+      active = false
+    }
   }, [stage.id])
 
-  const rows = useMemo(
-    () => buildIndividualRotationStandings(matches),
+  const standings = useMemo(
+    () =>
+      buildIndividualRotationStandings(
+        matches,
+      ),
     [matches],
   )
 
+  const completed =
+    matches.filter(
+      (match) =>
+        match.status === "completed",
+    ).length
+
   return (
-    <section className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Individual ranking
+    <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+      <header className="border-b border-neutral-200 bg-neutral-50 px-4 py-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
+          Individual Rotation
         </p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-950">Standings</h2>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-          Live individual standings calculated from completed doubles matches.
+
+        <h2 className="mt-1 text-lg font-bold text-neutral-950">
+          {stage.name}
+        </h2>
+
+        <p className="mt-1 text-sm text-neutral-600">
+          {completed} / {matches.length} matches completed
         </p>
-      </div>
+      </header>
 
       {loading ? (
-        <div className="border border-slate-200 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-          Loading ranking...
+        <div className="px-4 py-8 text-center text-sm text-neutral-500">
+          Loading standings...
         </div>
       ) : null}
 
       {error ? (
-        <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="border-t border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       ) : null}
 
-      {!loading && !error && rows.length > 0 ? (
-        <div className="border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Live standings
-            </p>
-            <h3 className="mt-1 text-lg font-semibold text-slate-950">Ranking</h3>
-            <p className="mt-1 text-sm text-slate-500">Updated from completed matches.</p>
-          </div>
-          <IndividualRotationStandingsTable rows={rows} />
+      {!loading &&
+      !error &&
+      standings.length === 0 ? (
+        <div className="px-4 py-8 text-center">
+          <p className="font-semibold text-neutral-950">
+            No standings yet
+          </p>
+
+          <p className="mt-2 text-sm text-neutral-600">
+            Generate this Individual Rotation stage to see the individual standings.
+          </p>
         </div>
       ) : null}
 
-      {!loading && !error && rows.length === 0 ? (
-        <div className="border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-          Generate the stage before opening the ranking.
+      {!loading &&
+      !error &&
+      standings.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wide text-neutral-500">
+                <th className="sticky left-0 z-20 w-10 bg-neutral-50 px-2 py-3 text-center">
+                  Pos
+                </th>
+
+                <th className="sticky left-10 z-20 min-w-[118px] max-w-[118px] sm:min-w-[170px] sm:max-w-none bg-neutral-50 px-3 py-3 text-left shadow-[4px_0_6px_-6px_rgba(0,0,0,0.35)]">
+                  Player
+                </th>
+
+                <th className="w-10 px-2 py-3 text-center">
+                  P
+                </th>
+
+                <th className="w-10 px-2 py-3 text-center">
+                  W
+                </th>
+
+                <th className="w-10 px-2 py-3 text-center">
+                  D
+                </th>
+
+                <th className="w-10 px-2 py-3 text-center">
+                  L
+                </th>
+
+                <th className="w-12 px-2 py-3 text-center">
+                  PF
+                </th>
+
+                <th className="w-12 px-2 py-3 text-center">
+                  PA
+                </th>
+
+                <th className="w-12 px-2 py-3 text-center">
+                  +/-
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {standings.map(
+                (row, index) => (
+                  <tr
+                    key={row.entryId}
+                    className="border-b border-neutral-100 last:border-b-0"
+                  >
+                    <td className="sticky left-0 z-10 bg-white px-2 py-3 text-center font-semibold text-neutral-500">
+                      {index + 1}
+                    </td>
+
+                    <td className="sticky left-10 z-10 min-w-[118px] max-w-[118px] sm:min-w-[170px] sm:max-w-none bg-white px-3 py-3 font-medium text-neutral-950 shadow-[4px_0_6px_-6px_rgba(0,0,0,0.35)]">
+                      <span className="block max-w-[82px] truncate sm:max-w-none">{row.displayName}</span>
+                    </td>
+
+                    <td className="px-2 py-3 text-center">
+                      {row.played}
+                    </td>
+
+                    <td className="px-2 py-3 text-center font-bold">
+                      {row.won}
+                    </td>
+
+                    <td className="px-2 py-3 text-center">
+                      {row.drawn}
+                    </td>
+
+                    <td className="px-2 py-3 text-center">
+                      {row.lost}
+                    </td>
+
+                    <td className="px-2 py-3 text-center">
+                      {row.pointsFor}
+                    </td>
+
+                    <td className="px-2 py-3 text-center">
+                      {row.pointsAgainst}
+                    </td>
+
+                    <td className="px-2 py-3 text-center font-semibold">
+                      {signed(row.diff)}
+                    </td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+          </table>
         </div>
       ) : null}
-    </section>
+
+      {!loading &&
+      !error &&
+      standings.length > 0 ? (
+        <p className="border-t border-neutral-100 px-4 py-3 text-xs leading-5 text-neutral-500">
+          Ranking: wins, points difference, points for, player name. Only completed matches contribute to the totals.
+        </p>
+      ) : null}
+    </article>
   )
 }

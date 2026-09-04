@@ -65,7 +65,7 @@ export default async function RosterPage({
         <div className="md:hidden">
           <Link
             href="/rosters"
-            className="inline-flex min-h-10 items-center rounded-full border border-slate-950 bg-white px-4 text-sm font-bold text-slate-950"
+            className="inline-flex min-h-10 items-center border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-950"
           >
             ← Rosters
           </Link>
@@ -89,7 +89,7 @@ export default async function RosterPage({
           <Link
             href={`/rosters/${roster.id}?section=players`}
             className={[
-              "flex min-h-11 items-center justify-center rounded-xl border px-3 text-sm font-bold",
+              "flex min-h-11 items-center justify-center border px-3 text-sm font-bold",
               section === "players"
                 ? "border-neutral-900 bg-neutral-900 text-white"
                 : "border-slate-300 bg-white text-slate-950",
@@ -100,7 +100,7 @@ export default async function RosterPage({
           <Link
             href={`/rosters/${roster.id}?section=teams`}
             className={[
-              "flex min-h-11 items-center justify-center rounded-xl border px-3 text-sm font-bold",
+              "flex min-h-11 items-center justify-center border px-3 text-sm font-bold",
               section === "teams"
                 ? "border-neutral-900 bg-neutral-900 text-white"
                 : "border-slate-300 bg-white text-slate-950",

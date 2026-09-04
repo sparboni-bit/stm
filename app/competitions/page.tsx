@@ -246,7 +246,7 @@ export default async function CompetitionsPage({
                             : "stages"}
 
                           {view === "past"
-                            ? " · ended"
+                            ? " · closed"
                             : ""}
                         </span>
                       </div>

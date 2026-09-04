@@ -284,12 +284,13 @@ export async function generateCompetitionStage(
       if (
         seedCount !== 0 &&
         seedCount !== 2 &&
+        seedCount !== 3 &&
         seedCount !== 4
       ) {
         return {
           success: false,
           message:
-            "Individual Rotation templates support 0, 2 or 4 seeded players. Update the Stage seeds before generation.",
+            "Individual Rotation templates support 0, 2, 3 or 4 Keep Apart players. Update the Stage Keep Apart selection before generation.",
         }
       }
 
@@ -309,7 +310,7 @@ export async function generateCompetitionStage(
         return {
           success: false,
           message:
-            `No precomputed Individual Rotation template is available for ${generationEntries.length} players, ${usableCourtCount} usable court(s), ${seedCount} seed(s), and ${requestedRounds} round(s). Generate the missing template before generating this Stage.`,
+            `No precomputed Individual Rotation template is available for ${generationEntries.length} players, ${usableCourtCount} usable court(s), ${seedCount} Keep Apart player(s), and ${requestedRounds} round(s). Generate the missing template before generating this Stage.`,
         }
       }
     }

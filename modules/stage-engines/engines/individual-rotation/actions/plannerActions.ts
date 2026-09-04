@@ -143,7 +143,7 @@ export async function saveIndividualRotationPlannerSettingsAction(
           input.requestedRounds,
           "Requested rounds",
           1,
-          12,
+          20,
         )
 
   const roundDurationMinutes =
@@ -159,19 +159,12 @@ export async function saveIndividualRotationPlannerSettingsAction(
     )
   }
 
+  // Time is advisory only. Organizers may intentionally
+  // generate more rounds than fit in the declared time window.
   const maxAvailableRounds = Math.min(
     maxRoundsByTime,
-    12,
+    20,
   )
-
-  if (
-    requestedRounds !== null &&
-    requestedRounds > maxAvailableRounds
-  ) {
-    throw new Error(
-      `Requested rounds exceed the available template/time limit. Maximum: ${maxAvailableRounds}.`,
-    )
-  }
 
   const updated =
     await updateCompetitionStageSettings(
@@ -425,13 +418,10 @@ export async function calculateIndividualRotationPlannerProposalsAction(
   }
 
   /*
-   * Template Library V1 contains R1–R12.
+   * Time defines the recommendation, not a generation limit.
+   * Template coverage is available up to R20.
    */
-  const maxAvailableRounds =
-    Math.min(
-      maxRoundsByTime,
-      12,
-    )
+  const maxAvailableRounds = 20
 
   const actualSeedCount =
     players.filter(

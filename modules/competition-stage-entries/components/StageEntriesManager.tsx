@@ -347,6 +347,11 @@ export function StageEntriesManager({
         "Stage generated successfully.",
       )
 
+      if (stage.stageType === "elimination") {
+        router.replace("?section=bracket")
+        return
+      }
+
       router.refresh()
     })
   }
@@ -587,12 +592,17 @@ export function StageEntriesManager({
   return (
     <section>
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Roster ({stageEntries.length})
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          {stage.stageType === "elimination" ? "Elimination" : "Players"}
+        </p>
+        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+          {stage.stageType === "elimination" ? "Select & Seed Players" : `Players (${stageEntries.length})`}
         </h2>
 
         <p className="mt-1 text-sm text-slate-500">
-          Choose who plays in this stage and set seeds when needed.
+          {stage.stageType === "elimination"
+            ? "Select the participants for this Stage and assign numbered seeds only where needed."
+            : "Choose who plays in this Stage and set seeds when needed."}
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -619,6 +629,17 @@ export function StageEntriesManager({
         disabled={controlsDisabled}
         onImported={() => router.refresh()}
       />
+
+      {stage.stageType === "elimination" ? (
+        <div className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+          <p className="text-sm font-semibold text-neutral-950">
+            ⓘ Seeds
+          </p>
+          <p className="mt-1 text-sm leading-5 text-neutral-600">
+            Number protected entries 1, 2, 3… The bracket engine places them accordingly and creates BYEs automatically when required.
+          </p>
+        </div>
+      ) : null}
 
       {hasMixedEntryTypes && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -991,7 +1012,7 @@ export function StageEntriesManager({
 
               {!isLocked && activeStageEntries.length < 2 && (
                 <p className="mt-3 text-sm font-medium text-amber-700">
-                  Add at least two participants before generating the phase.
+                  Add at least two participants before generating the Stage.
                 </p>
               )}
             </div>
@@ -1000,13 +1021,18 @@ export function StageEntriesManager({
               type="button"
               onClick={handleGenerate}
               disabled={!mounted || !canGenerate || isPending}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className={[
+                "inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:bg-slate-300",
+                stage.stageType === "elimination"
+                  ? "bg-[var(--arena-yellow)] text-slate-950 hover:brightness-95"
+                  : "bg-slate-900 text-white hover:bg-slate-700",
+              ].join(" ")}
             >
               {isPending
                 ? "Generating..."
                 : isLocked
                   ? "Stage generated"
-                  : "Generate stage"}
+                  : stage.stageType === "elimination" ? "Generate Bracket" : "Generate Stage"}
             </button>
           </div>
         </div>

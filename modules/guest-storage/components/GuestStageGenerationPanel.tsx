@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 
 import type { CompetitionEntry } from "@/modules/competition-entries/types"
@@ -261,6 +262,7 @@ export function GuestStageGenerationPanel({
       })
       const result = await generateGuestCompetitionStage({ competitionId, stageId: stage.id })
       setMessage(`${result.matchCount} matches generated in ${groupCount} group(s).`)
+      onOpenMatches?.()
     })
   }
 
@@ -276,6 +278,7 @@ export function GuestStageGenerationPanel({
       }
       const result = await generateGuestCompetitionStage({ competitionId, stageId: stage.id })
       setMessage(`${result.matchCount} matches generated in ${result.roundCount} round(s).`)
+      onOpenMatches?.()
     })
   }
 
@@ -357,6 +360,22 @@ export function GuestStageGenerationPanel({
       <section className="bg-white">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Individual Rotation</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">Stage Setup</h1>
+
+        <div className="mt-4 rounded-2xl bg-neutral-100 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <Image
+              src="/brand/pickleball-arena-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <p className="text-sm leading-5 text-neutral-800">
+              <strong>Stage Setup.</strong>{" "}
+              Set courts, available time and match duration. The recommended number of rounds is a guide; you can choose a different value when needed.
+            </p>
+          </div>
+        </div>
         {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
         {message ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{message}</div> : null}
         <div className="mt-6 max-w-2xl">
@@ -445,6 +464,7 @@ export function GuestStageGenerationPanel({
                 </div>
               </div>
 
+              <div className="sticky bottom-0 z-20 -mx-4 mt-5 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
               <button
                 type="button"
                 disabled={
@@ -458,12 +478,13 @@ export function GuestStageGenerationPanel({
                 onClick={() =>
                   setPendingGeneration("ir")
                 }
-                className="mt-5 min-h-12 w-full bg-[var(--arena-yellow)] px-5 text-sm font-black text-neutral-950 disabled:opacity-50 lg:max-w-sm"
+                className="min-h-12 w-full rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-black text-neutral-950 disabled:opacity-50 lg:max-w-sm"
               >
                 {working
                   ? "Working..."
                   : "Generate Matches"}
               </button>
+              </div>
             </>
           ) : (
             <div className="mt-5 space-y-3">
@@ -476,7 +497,7 @@ export function GuestStageGenerationPanel({
                 <button
                   type="button"
                   onClick={onOpenMatches}
-                  className="min-h-12 w-full bg-neutral-950 px-5 text-sm font-black text-white lg:max-w-sm"
+                  className="min-h-12 w-full rounded-xl bg-neutral-950 px-5 text-sm font-black text-white lg:max-w-sm"
                 >
                   Go to Matches
                 </button>
@@ -493,10 +514,10 @@ export function GuestStageGenerationPanel({
 
   if (!supported) {
     return (
-      <section className="border border-neutral-200 bg-neutral-50 p-4">
-        <h3 className="font-bold text-neutral-950">Generate phase</h3>
+      <section className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+        <h3 className="font-bold text-neutral-950">Generate stage</h3>
         <p className="mt-1 text-sm text-neutral-600">
-          Guest generation for {stage.stageType} will be enabled in R2B.4C.
+          This Stage format is not available in this version.
         </p>
       </section>
     )
@@ -504,17 +525,118 @@ export function GuestStageGenerationPanel({
 
   return (
     <>
-    <section className="border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Generation</p>
-      <h2 className="mt-1 text-lg font-bold text-neutral-950">{stage.name}</h2>
+    <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
+        {stage.stageType === "elimination"
+          ? "Elimination"
+          : stage.stageType === "round_robin"
+            ? "Round Robin"
+            : "Generation"}
+      </p>
+      <h2 className="mt-1 text-lg font-bold text-neutral-950">
+        {stage.stageType === "elimination" || stage.stageType === "round_robin"
+          ? "Stage Setup"
+          : stage.name}
+      </h2>
       <p className="mt-1 text-sm text-neutral-600">
         {locked
           ? `${matchCount} generated match(es). Roster and structure are locked.`
-          : "Review the phase setup, then generate the matches using the same STM engine used by Cloud tournaments."}
+          : stage.stageType === "elimination"
+            ? "Choose the format, then generate the bracket after selecting participants and seeds from Players."
+            : "Review the stage setup, then generate the matches."}
       </p>
 
-      {error ? <div className="mt-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-      {message ? <div className="mt-4 border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-700">{message}</div> : null}
+      {stage.stageType === "round_robin" && !locked ? (
+        <div className="mt-4 rounded-2xl bg-neutral-100 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <Image
+              src="/brand/pickleball-arena-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <p className="text-sm leading-5 text-neutral-800">
+              <strong>Round Robin Setup.</strong>{" "}
+              Choose Singles or Doubles and the number of groups. Select participants and protected seeds from Players. One protected entry can be placed in each group; the remaining entries are distributed as evenly as possible.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {stage.stageType === "elimination" ? (
+        <div className="mt-4 rounded-2xl bg-neutral-100 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <Image
+              src="/brand/pickleball-arena-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <p className="text-sm leading-5 text-neutral-800">
+              <strong>Stage Setup.</strong>{" "}
+              Choose Singles or Doubles, then generate the bracket after selecting the participants and assigning any numbered seeds in Players.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      {message ? <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-700">{message}</div> : null}
+
+      {stage.stageType === "round_robin" && locked ? (
+        <div className="mt-5 space-y-4">
+          <div className="rounded-2xl bg-neutral-100 p-4">
+            <div className="flex items-start gap-3">
+              <Image
+                src="/brand/pickleball-arena-logo.png"
+                alt=""
+                width={40}
+                height={40}
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+              <p className="text-sm leading-5 text-neutral-800">
+                <strong>Round Robin generated.</strong>{" "}
+                Groups and participants are locked. Open Matches to enter results; Standings update from completed matches.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-neutral-200 bg-white p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">Format</p>
+              <p className="mt-1 text-base font-black text-neutral-950">
+                {stage.settings?.playMode === "doubles" ? "Doubles" : "Singles"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-white p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">Groups</p>
+              <p className="mt-1 text-base font-black text-neutral-950">{groupCount}</p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-white p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">Participants</p>
+              <p className="mt-1 text-base font-black text-neutral-950">{active.length}</p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-white p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">Protected</p>
+              <p className="mt-1 text-base font-black text-neutral-950">
+                {active.filter((entry) => entry.seed !== null).length}
+              </p>
+            </div>
+          </div>
+
+          {matchCount > 0 && onOpenMatches ? (
+            <button
+              type="button"
+              onClick={onOpenMatches}
+              className="min-h-12 w-full rounded-xl bg-neutral-950 px-5 text-sm font-black text-white sm:max-w-sm"
+            >
+              Go to Matches
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {stage.stageType === "elimination" && !locked ? (
         <div className="mt-5 space-y-4">
@@ -544,29 +666,6 @@ export function GuestStageGenerationPanel({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onSelectPlayers}
-            className="flex min-h-12 w-full items-center justify-between rounded-[12px] border border-neutral-200 bg-white px-4 text-left"
-          >
-            <span>
-              <span className="block text-[10px] font-bold uppercase tracking-wide text-neutral-400">
-                {stage.settings?.playMode === "doubles" ? "Teams" : "Players"}
-              </span>
-              <span className="mt-0.5 block text-sm font-semibold text-neutral-800">
-                {active.length} selected
-              </span>
-            </span>
-            <span className="text-xs font-black text-neutral-950">Select & seed →</span>
-          </button>
-
-          <div className="rounded-[14px] border border-sky-200 bg-sky-50 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sky-700">Seeds</p>
-            <p className="mt-1 text-sm font-semibold text-sky-950">Number the protected entries: 1, 2, 3…</p>
-            <p className="mt-1 text-xs leading-5 text-sky-800">
-              The elimination engine uses numbered seeds when positioning entries in the bracket. BYEs are generated automatically when required.
-            </p>
-          </div>
         </div>
       ) : null}
 
@@ -628,49 +727,26 @@ export function GuestStageGenerationPanel({
             </div>
           </div>
 
-          <div className="mt-4">
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">
-              {stage.settings?.playMode === "doubles" ? "Teams" : "Players"}
-            </p>
-            <button
-              type="button"
-              onClick={onSelectPlayers}
-              className="flex min-h-12 w-full items-center justify-between rounded-[12px] border border-neutral-200 bg-white px-4 text-left"
-            >
-              <span className="text-sm font-semibold text-neutral-700">{active.length} selected</span>
-              <span className="text-xs font-black text-neutral-950">Change →</span>
-            </button>
-          </div>
-
-          <div className="mt-4 rounded-[16px] border border-neutral-200 bg-white">
-            <div className="flex items-center justify-between gap-4 p-4">
-              <div>
-                <p className="text-sm font-semibold text-neutral-950">Protected seeds</p>
-                <p className="mt-0.5 text-xs text-neutral-500">
-                  One protected {stage.settings?.playMode === "doubles" ? "team" : "player"} can be assigned to each group.
-                </p>
-              </div>
-              <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-black text-neutral-700">
-                {active.filter((entry) => entry.seed !== null).length} / {groupCount}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-[14px] border border-sky-200 bg-sky-50 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sky-700">Recommended</p>
-            <p className="mt-1 text-sm font-semibold text-sky-950">
-              {active.length} {stage.settings?.playMode === "doubles" ? "teams" : "players"} · {groupCount} group{groupCount === 1 ? "" : "s"}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-sky-800">
-              Protected seeds are placed first, one per group. Remaining entries are then distributed as evenly as possible.
-            </p>
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
+            <span className="text-sm font-semibold text-neutral-700">
+              {active.length} {stage.settings?.playMode === "doubles" ? "teams" : "players"} selected
+            </span>
+            {!locked && onSelectPlayers ? (
+              <button
+                type="button"
+                onClick={onSelectPlayers}
+                className="min-h-10 rounded-xl border border-neutral-950 bg-white px-4 text-xs font-black text-neutral-950"
+              >
+                Players
+              </button>
+            ) : null}
           </div>
 
           <button
             type="button"
             disabled={working || active.length < groupCount * 2}
             onClick={() => setPendingGeneration("generic")}
-            className="mt-5 min-h-12 w-full rounded-[10px] bg-[var(--arena-yellow)] px-5 text-sm font-black text-[var(--arena-black)] disabled:opacity-40"
+            className="sticky bottom-3 z-20 mt-5 min-h-12 w-full rounded-[10px] bg-[var(--arena-yellow)] shadow-lg sm:static sm:shadow-none px-5 text-sm font-black text-[var(--arena-black)] disabled:opacity-40"
           >
             {working ? "Working..." : "Generate Groups & Matches"}
           </button>
@@ -683,9 +759,9 @@ export function GuestStageGenerationPanel({
             type="button"
             disabled={working || active.length < 2}
             onClick={() => setPendingGeneration("generic")}
-            className="min-h-11 bg-[var(--arena-yellow)] px-5 text-sm font-bold text-[var(--arena-black)] disabled:opacity-50"
+            className="sticky bottom-3 z-20 min-h-11 rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-bold shadow-lg sm:static sm:shadow-none text-[var(--arena-black)] disabled:opacity-50"
           >
-            {working ? "Working..." : "Generate phase"}
+            {working ? "Working..." : "Generate stage"}
           </button>
           <span className="inline-flex min-h-11 items-center px-1 text-xs text-neutral-500">
             {active.length} active participant(s)
@@ -697,7 +773,7 @@ export function GuestStageGenerationPanel({
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="guest-phase-confirm-title" className="w-full max-w-sm rounded-[18px] border border-neutral-200 bg-white p-5 shadow-2xl">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Confirm generation</p>
-            <h2 id="guest-phase-confirm-title" className="mt-1 text-xl font-black text-neutral-950">Generate phase?</h2>
+            <h2 id="guest-phase-confirm-title" className="mt-1 text-xl font-black text-neutral-950">Generate stage?</h2>
             <p className="mt-3 text-sm leading-5 text-slate-600">
               Generate <strong className="text-neutral-950">{stage.name}</strong>? Roster, seeds and structure will be locked.
             </p>

@@ -50,7 +50,7 @@ export function GuestCompetitionList() {
       setError(
         cause instanceof Error
           ? cause.message
-          : "Unable to load guest tournaments.",
+          : "Unable to load tournaments.",
       )
     } finally {
       setLoading(false)
@@ -88,7 +88,7 @@ export function GuestCompetitionList() {
   if (loading) {
     return (
       <div className="border border-neutral-200 bg-white p-5 text-sm text-neutral-500 shadow-sm">
-        Loading guest tournaments...
+        Loading tournaments...
       </div>
     )
   }
@@ -101,8 +101,8 @@ export function GuestCompetitionList() {
         </h2>
 
         <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-neutral-600">
-          Create your first tournament. No registration
-          required.
+          Create your first tournament and start adding players
+          and stages.
         </p>
 
         <Link
@@ -134,7 +134,7 @@ export function GuestCompetitionList() {
             <div className="flex items-start justify-between gap-4 p-4">
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
-                  Guest tournament
+                  Tournament
                 </p>
 
                 <h2 className="mt-1 break-words text-lg font-bold text-neutral-950">

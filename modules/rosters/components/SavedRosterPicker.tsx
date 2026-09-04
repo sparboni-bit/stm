@@ -45,6 +45,8 @@ export function SavedRosterPicker({
     useState<string | null>(null)
   const [error, setError] =
     useState<string | null>(null)
+  const [hydrated, setHydrated] =
+    useState(false)
 
   const [loadingRoster, startRosterTransition] =
     useTransition()
@@ -58,6 +60,10 @@ export function SavedRosterPicker({
       ),
     [entries],
   )
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   useEffect(() => {
     setSelected([])
@@ -140,6 +146,12 @@ export function SavedRosterPicker({
 
         setSelected([])
         onImported?.()
+
+        // Import is complete: return immediately to the compact
+        // Saved Roster selector. Resetting the selector also clears
+        // the transient roster list through the existing effect.
+        setRosterId("")
+        setMessage(null)
       } catch (cause) {
         setError(
           cause instanceof Error
@@ -191,7 +203,7 @@ export function SavedRosterPicker({
         <select
           id="saved-roster-picker"
           value={rosterId}
-          disabled={disabled || loadingRoster || importing}
+          disabled={hydrated ? disabled : false}
           onChange={(event) =>
             setRosterId(event.target.value)
           }

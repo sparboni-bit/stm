@@ -4,7 +4,7 @@ export type IndividualRotationTemplateFamily = {
   seedCount: number
 }
 
-export const INDIVIDUAL_ROTATION_TEMPLATE_MAX_ROUNDS = 12
+export const INDIVIDUAL_ROTATION_TEMPLATE_MAX_ROUNDS = 20
 
 /**
  * Canonical seed configurations for Individual Rotation templates.

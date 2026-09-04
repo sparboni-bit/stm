@@ -187,6 +187,12 @@ export function GuestStageEntriesManager({
       return { stageEntryId: stageEntry.id, seed }
     })
 
+    if (seedMode === "numbered") {
+      const seeds = updates.map((item) => item.seed).filter((seed): seed is number => seed !== null).sort((a, b) => a - b)
+      if (new Set(seeds).size !== seeds.length) throw new Error("Each seed number must be unique.")
+      if (seeds.some((seed, index) => seed !== index + 1)) throw new Error("Seeds must be consecutive: 1, 2, 3...")
+    }
+
     await setGuestStageEntrySeeds({
       competitionId,
       stageId: stage.id,
@@ -237,23 +243,18 @@ export function GuestStageEntriesManager({
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Tournament roster</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">Select Players</h1>
 
-        <div className="mt-5 rounded-2xl bg-neutral-100 p-4">
+        <div className="mt-4 rounded-2xl bg-neutral-100 px-4 py-4">
           <div className="flex items-start gap-3">
             <Image
-              src="/brand/logo_round_black.png"
+              src="/brand/pickleball-arena-logo.png"
               alt=""
               width={40}
               height={40}
-              className="h-10 w-10 shrink-0"
+              className="h-10 w-10 shrink-0 object-contain"
             />
             <p className="text-sm leading-5 text-neutral-800">
-              <strong>How Individual Rotation works.</strong>{" "}
-              Select 4 to 20 players, choose the available courts and optionally mark
-              2 or 4 players as Keep Apart seeds. Pickleball Arena builds each round to distribute
-              playing time and sit-outs as evenly as possible, while rotating partners
-              and opponents and limiting repeated pairings. Seeded players are kept
-              apart whenever possible. Based on the available time and match duration,
-              Pickleball Arena recommends a number of rounds — you can generate fewer or more.
+              <strong>Individual Rotation.</strong>{" "}
+              Select 4–20 players and optionally mark 0, 2, 3 or 4 as Keep Apart. Pickleball Arena balances playing time, sit-outs, partners and opponents.
             </p>
           </div>
         </div>
@@ -278,7 +279,7 @@ export function GuestStageEntriesManager({
         </button>
 
         <p className="mt-2 text-sm leading-5 text-slate-500">
-          🚩 <strong>Keep Apart:</strong> mark 2 or 4 players. Pickleball Arena will avoid pairing
+          🚩 <strong>Keep Apart:</strong> mark 0, 2, 3 or 4 players. Pickleball Arena will avoid pairing
           them together whenever possible.
         </p>
 
@@ -289,7 +290,7 @@ export function GuestStageEntriesManager({
             const protectedPlayer = Boolean(stageEntry?.seed)
 
             return (
-              <div key={entry.id} className="flex min-h-14 items-center gap-3 border-b border-neutral-200">
+              <div key={entry.id} className="flex min-h-11 items-center gap-3 border-b border-neutral-200">
                 <button
                   type="button"
                   disabled={working || locked}
@@ -336,6 +337,206 @@ export function GuestStageEntriesManager({
     )
   }
 
+  if (stage.stageType === "elimination") {
+    const entriesForMode = roster.filter((entry) => entry.status === "active" && entry.entry_type === expectedEntryType)
+    const activeIds = new Set(activeStageEntries.map((item) => item.competition_entry_id))
+    const allSelected = entriesForMode.length > 0 && entriesForMode.every((entry) => activeIds.has(entry.id))
+
+    return (
+      <section className="bg-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Elimination</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">Players</h1>
+        <div className="mt-5 rounded-2xl bg-neutral-100 p-4">
+          <div className="flex items-start gap-3">
+            <Image src="/brand/pickleball-arena-logo.png" alt="" width={40} height={40} className="h-10 w-10 shrink-0 object-contain" />
+            <p className="text-sm leading-5 text-neutral-800"><strong>Select participants and seeds.</strong>{" "}Choose the {stageEntryMode === "doubles" ? "teams" : "players"} for this Stage. Enter 1, 2, 3... only for seeded entries; leave the others blank. BYEs are generated automatically when needed.</p>
+          </div>
+        </div>
+        {locked ? <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">This Stage has already been generated. Players and seeds are locked.</div> : null}
+        {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+        {message ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">{message}</div> : null}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <button type="button" disabled={working || locked || entriesForMode.length === 0} onClick={() => { if (allSelected) { void run(() => removeAllGuestStageEntries({ competitionId, stageId: stage.id })) } else { const missing = entriesForMode.filter((entry) => !activeIds.has(entry.id)).map((entry) => entry.id); if (missing.length) void run(() => assignGuestStageEntries({ competitionId, stageId: stage.id, entryIds: missing })) } }} className="inline-flex min-h-11 items-center gap-3 rounded-xl border border-neutral-950 bg-white px-4 text-sm font-bold disabled:opacity-50">
+            <span className="grid h-6 w-6 place-items-center rounded-md border border-neutral-950 bg-[var(--arena-yellow)] text-sm">✓</span>{allSelected ? "Deselect All" : "Select All"}
+          </button>
+          <span className="text-xs font-bold text-slate-500">{activeStageEntries.length} selected · {selectedSeedCount} seeds</span>
+        </div>
+        <div className="mt-4 grid gap-x-6 lg:grid-cols-2">
+          {entriesForMode.map((entry) => {
+            const stageEntry = activeStageEntries.find((item) => item.competition_entry_id === entry.id)
+            const checked = Boolean(stageEntry)
+            const raw = stageEntry ? seedValues[stageEntry.id] ?? (stageEntry.seed === null ? "" : String(stageEntry.seed)) : ""
+            return (
+              <div key={entry.id} className="grid min-h-14 grid-cols-[1.5rem_minmax(0,1fr)_4.5rem] items-center gap-3 border-b border-neutral-200">
+                <button type="button" disabled={working || locked} onClick={() => { if (stageEntry) { void run(() => removeGuestStageEntry({ competitionId, stageId: stage.id, stageEntryId: stageEntry.id })) } else { void run(() => assignGuestStageEntries({ competitionId, stageId: stage.id, entryIds: [entry.id] })) } }} className={["grid h-6 w-6 place-items-center rounded-md border border-neutral-950 text-sm font-black", checked ? "bg-[var(--arena-yellow)]" : "bg-white"].join(" ")} aria-label={`${checked ? "Remove" : "Select"} ${entry.display_name}`}>{checked ? "✓" : ""}</button>
+                <span className="min-w-0 truncate font-bold text-neutral-950">{entry.display_name}</span>
+                <input type="text" inputMode="numeric" value={raw} disabled={working || locked || !stageEntry} onChange={(event) => { if (!stageEntry) return; const value = event.target.value; if (value === "" || /^\d+$/.test(value)) setSeedValues((current) => ({ ...current, [stageEntry.id]: value })) }} placeholder="Seed" aria-label={`Seed for ${entry.display_name}`} className="min-h-10 w-full rounded-xl border border-neutral-300 bg-white px-2 text-center text-sm font-semibold disabled:bg-neutral-50 disabled:text-neutral-300" />
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <p className="text-sm text-slate-500">{activeStageEntries.length} {stageEntryMode === "doubles" ? "teams" : "players"} selected</p>
+          {!locked && activeStageEntries.length > 0 ? <button type="button" disabled={working} onClick={() => void run(saveSeeds, "Seeds saved.")} className="min-h-11 rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-black text-[var(--arena-black)] disabled:opacity-50">{working ? "Saving..." : "Save seeds"}</button> : null}
+        </div>
+      </section>
+    )
+  }
+
+  if (stage.stageType === "round_robin") {
+    const entriesForMode = roster.filter(
+      (entry) => entry.status === "active" && entry.entry_type === expectedEntryType,
+    )
+    const activeIds = new Set(
+      activeStageEntries.map((item) => item.competition_entry_id),
+    )
+    const allSelected =
+      entriesForMode.length > 0 &&
+      entriesForMode.every((entry) => activeIds.has(entry.id))
+
+    return (
+      <section className="bg-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          Round Robin
+        </p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
+          Players
+        </h1>
+
+        <div className="mt-5 rounded-2xl bg-neutral-100 p-4">
+          <div className="flex items-start gap-3">
+            <Image
+              src="/brand/pickleball-arena-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <p className="text-sm leading-5 text-neutral-800">
+              <strong>Select participants and protected seeds.</strong>{" "}
+              Choose the {stageEntryMode === "doubles" ? "teams" : "players"} for this Stage.
+              You can protect up to {groupCount}: protected entries are placed in different groups,
+              then the remaining participants are distributed as evenly as possible.
+            </p>
+          </div>
+        </div>
+
+        {locked ? (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">
+            This Stage has already been generated. Players and protected seeds are locked.
+          </div>
+        ) : null}
+        {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+        {message ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">{message}</div> : null}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            disabled={working || locked || entriesForMode.length === 0}
+            onClick={() => {
+              if (allSelected) {
+                void run(() => removeAllGuestStageEntries({ competitionId, stageId: stage.id }))
+              } else {
+                const missing = entriesForMode
+                  .filter((entry) => !activeIds.has(entry.id))
+                  .map((entry) => entry.id)
+                if (missing.length) {
+                  void run(() => assignGuestStageEntries({
+                    competitionId,
+                    stageId: stage.id,
+                    entryIds: missing,
+                  }))
+                }
+              }
+            }}
+            className="inline-flex min-h-11 items-center gap-3 rounded-xl border border-neutral-950 bg-white px-4 text-sm font-bold disabled:opacity-50"
+          >
+            <span className="grid h-6 w-6 place-items-center rounded-md border border-neutral-950 bg-[var(--arena-yellow)] text-sm">✓</span>
+            {allSelected ? "Deselect All" : "Select All"}
+          </button>
+          <span className="text-xs font-bold text-slate-500">
+            {activeStageEntries.length} selected · Protected {selectedSeedCount} / {groupCount}
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-x-6 lg:grid-cols-2">
+          {entriesForMode.map((entry) => {
+            const stageEntry = activeStageEntries.find(
+              (item) => item.competition_entry_id === entry.id,
+            )
+            const checked = Boolean(stageEntry)
+            const protectedEntry = Boolean(stageEntry?.seed)
+
+            return (
+              <div key={entry.id} className="flex min-h-14 items-center gap-3 border-b border-neutral-200">
+                <button
+                  type="button"
+                  disabled={working || locked}
+                  onClick={() => {
+                    if (stageEntry) {
+                      void run(() => removeGuestStageEntry({
+                        competitionId,
+                        stageId: stage.id,
+                        stageEntryId: stageEntry.id,
+                      }))
+                    } else {
+                      void run(() => assignGuestStageEntries({
+                        competitionId,
+                        stageId: stage.id,
+                        entryIds: [entry.id],
+                      }))
+                    }
+                  }}
+                  className={[
+                    "grid h-6 w-6 shrink-0 place-items-center rounded-md border border-neutral-950 text-sm font-black",
+                    checked ? "bg-[var(--arena-yellow)]" : "bg-white",
+                  ].join(" ")}
+                  aria-label={`${checked ? "Remove" : "Select"} ${entry.display_name}`}
+                >
+                  {checked ? "✓" : ""}
+                </button>
+
+                <span className="min-w-0 flex-1 truncate font-bold text-neutral-950">
+                  {entry.display_name}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={working || locked || !stageEntry}
+                  onClick={() =>
+                    stageEntry
+                      ? void run(() => toggleProtected(stageEntry), "Protection updated.")
+                      : undefined
+                  }
+                  aria-label={`${protectedEntry ? "Remove protection from" : "Protect"} ${entry.display_name}`}
+                  title="Protected seed"
+                  className={[
+                    "grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-xs font-black",
+                    protectedEntry
+                      ? "border-neutral-950 bg-[var(--arena-yellow)] text-neutral-950"
+                      : "border-neutral-200 bg-white text-neutral-500",
+                    !stageEntry ? "opacity-40" : "",
+                  ].join(" ")}
+                >
+                  P
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <p className="text-sm text-slate-500">
+            {activeStageEntries.length} {stageEntryMode === "doubles" ? "teams" : "players"} selected
+          </p>
+          <span className="text-xs font-bold text-slate-500">
+            Protected {selectedSeedCount} / {groupCount}
+          </span>
+        </div>
+      </section>
+    )
+  }
+
   const normalizedEntrySearch = entrySearch.trim().toLocaleLowerCase()
   const visibleStageEntries =
     seedMode === "numbered" && normalizedEntrySearch
@@ -346,7 +547,7 @@ export function GuestStageEntriesManager({
       : stageEntries
 
   return (
-    <section className="border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-3 border-b border-neutral-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
@@ -365,18 +566,18 @@ export function GuestStageEntriesManager({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <span className="border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700">
+          <span className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700">
             {activeStageEntries.length} {stageEntryMode === "doubles" ? "teams" : "players"}
           </span>
 
-          <span className="border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700">
+          <span className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700">
             {stageEntryMode === "doubles" ? "Doubles" : "Singles"}
           </span>
         </div>
       </div>
 
       {locked ? (
-        <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-800">
           This stage has already been
           generated. Roster and seeds are
           locked.
@@ -384,26 +585,26 @@ export function GuestStageEntriesManager({
       ) : null}
 
       {incompatibleAssignedEntries.length > 0 ? (
-        <div className="mt-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           This stage contains entries that do not match its {stageEntryMode} play mode.
           Remove them before generating the stage.
         </div>
       ) : null}
 
       {error ? (
-        <div className="mt-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       ) : null}
 
       {message ? (
-        <div className="mt-4 border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
           {message}
         </div>
       ) : null}
 
       <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-2">
-        <div className="min-w-0 border border-neutral-200 p-3 sm:p-4">
+        <div className="min-w-0 rounded-2xl border border-neutral-200 p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-neutral-950">
@@ -428,7 +629,7 @@ export function GuestStageEntriesManager({
                   ),
                 )
               }
-              className="min-h-10 border border-neutral-300 px-3 text-xs font-semibold disabled:opacity-50"
+              className="min-h-10 rounded-xl border border-neutral-300 px-3 text-xs font-semibold disabled:opacity-50"
             >
               Select all
             </button>
@@ -508,14 +709,14 @@ export function GuestStageEntriesManager({
                 }),
               )
             }
-            className="mt-4 min-h-11 w-full bg-neutral-950 px-4 text-sm font-semibold text-white disabled:opacity-50"
+            className="mt-4 min-h-11 w-full rounded-xl bg-neutral-950 px-4 text-sm font-semibold text-white disabled:opacity-50"
           >
             Add selected (
             {selected.length})
           </button>
         </div>
 
-        <div className="min-w-0 border border-neutral-200 p-3 sm:p-4">
+        <div className="min-w-0 rounded-2xl border border-neutral-200 p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-neutral-950">
@@ -550,14 +751,14 @@ export function GuestStageEntriesManager({
                   }),
                 )
               }}
-              className="min-h-10 border border-red-200 px-3 text-xs font-semibold text-red-700 disabled:opacity-50"
+              className="min-h-10 rounded-xl border border-red-200 px-3 text-xs font-semibold text-red-700 disabled:opacity-50"
             >
               Remove all
             </button>
           </div>
 
           {stageEntries.length > 0 ? (
-            <div className="mb-3 border border-neutral-200 bg-neutral-50 p-3">
+            <div className="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-600">
                   {seedMode === "keep_apart"
@@ -657,7 +858,7 @@ export function GuestStageEntriesManager({
                             }
                           }}
                           placeholder="Seed"
-                          className="min-h-11 w-full border border-neutral-300 px-2 text-center text-sm font-semibold sm:w-20"
+                          className="min-h-11 w-full rounded-xl border border-neutral-300 px-2 text-center text-sm font-semibold sm:w-20"
                         />
                       ) : (
                         <button
@@ -736,7 +937,7 @@ export function GuestStageEntriesManager({
                     "Elimination seeds saved successfully.",
                   )
                 }
-                className="min-h-11 bg-[var(--arena-yellow)] px-5 text-sm font-semibold text-[var(--arena-black)] disabled:opacity-50"
+                className="min-h-11 rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-semibold text-[var(--arena-black)] disabled:opacity-50"
               >
                 {working
                   ? "Saving..."
@@ -747,7 +948,7 @@ export function GuestStageEntriesManager({
         </div>
       </div>
 
-      <div className="mt-5 border border-neutral-200 bg-neutral-50 p-4">
+      <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
           Next step
         </p>
@@ -755,10 +956,8 @@ export function GuestStageEntriesManager({
           Generate stage
         </h3>
         <p className="mt-1 text-sm leading-5 text-neutral-600">
-          Guest generation will be connected
-          in R2B.4B. This step only prepares
-          and persists the stage roster and
-          seeds.
+          This Stage format is not available in this version.
+          You can still review the participant and seed setup here.
         </p>
       </div>
     </section>

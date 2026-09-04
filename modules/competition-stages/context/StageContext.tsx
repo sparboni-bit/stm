@@ -16,7 +16,7 @@ export type StageContextActions = {
     sectionId: string,
   ) => string
 
-  configureStage: () => Promise<void>
+  configureStage: (options?: { refresh?: boolean }) => Promise<void>
 
   generateStage: () => Promise<void>
 

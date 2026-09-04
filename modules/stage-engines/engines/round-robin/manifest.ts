@@ -5,7 +5,7 @@ export const roundRobinEngineManifest: StageEngineManifest = {
   name: "Round Robin",
   description: "Group-based competition with ranking support.",
   version: "1.0.0",
-  defaultSection: "overview",
+  defaultSection: "structure",
   capabilities: {
     supportsEntries: true,
     supportsGeneration: true,
@@ -17,22 +17,16 @@ export const roundRobinEngineManifest: StageEngineManifest = {
   },
   workflow: [
     {
-      id: "overview",
-      milestone: "configure",
-      label: "Overview",
-      description: "Round Robin stage overview.",
-    },
-    {
       id: "structure",
       milestone: "configure",
-      label: "Structure",
-      description: "Configure groups and Round Robin structure.",
+      label: "Setup",
+      description: "Configure the Round Robin Stage.",
     },
     {
       id: "entries",
       milestone: "entries",
-      label: "Entries",
-      description: "Select the entries taking part in this stage.",
+      label: "Players",
+      description: "Select the players taking part in this stage.",
     },
     {
       id: "groups",
@@ -51,12 +45,6 @@ export const roundRobinEngineManifest: StageEngineManifest = {
       milestone: "play",
       label: "Standings",
       description: "Group standings calculated from completed matches.",
-    },
-    {
-      id: "reports",
-      milestone: "results",
-      label: "Reports",
-      description: "Round Robin reports and final standings.",
     },
   ],
 }

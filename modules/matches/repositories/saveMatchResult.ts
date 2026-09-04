@@ -387,12 +387,6 @@ export async function saveBestOf3MatchResult({
 
   const match = await loadMatch(matchId)
 
-  if (match.match_type === "individual_rotation") {
-    throw new Error(
-      "Individual Rotation supports Single Set matches only.",
-    )
-  }
-
   const { aId, bId } = resolvedParticipants(match)
   const linked =
     await loadAndValidateDownstream(match)
@@ -487,15 +481,6 @@ export async function saveRetirementMatchResult({
   })
 
   const match = await loadMatch(matchId)
-
-  if (
-    match.match_type === "individual_rotation" &&
-    scoreFormat !== "single_set"
-  ) {
-    throw new Error(
-      "Individual Rotation supports Single Set matches only.",
-    )
-  }
 
   const { aId, bId } = resolvedParticipants(match)
   const linked =

@@ -9,6 +9,9 @@ import { ensureRoundRobinEngineRegistered } from "@/modules/stage-engines/engine
 import { ensureIndividualRotationEngineRegistered } from "@/modules/stage-engines/engines/individual-rotation/register"
 import type { IndividualRotationSchedule } from "@/modules/stage-engines/engines/individual-rotation/domain/IndividualRotationSchedule"
 import { IndividualRotationMapper } from "@/modules/stage-engines/engines/individual-rotation/mappers/IndividualRotationMapper"
+import { buildGuidedCandidateRounds } from "@/modules/stage-engines/engines/individual-rotation/fairness/GuidedRoundBuilder"
+import { scoreFairnessSchedule } from "@/modules/stage-engines/engines/individual-rotation/fairness/FairnessScorer"
+import type { FairnessPlayer, FairnessRound } from "@/modules/stage-engines/engines/individual-rotation/fairness/types"
 import { getGuestIndividualRotationTemplateAction } from "@/modules/guest-storage/actions/getGuestIndividualRotationTemplate.action"
 import { INDIVIDUAL_ROTATION_TEMPLATE_ENGINE_VERSION } from "@/modules/stage-engines/engines/individual-rotation/templates/types"
 import type { RoundRobinSchedule } from "@/modules/stage-engines/engines/round-robin/domain/RoundRobinSchedule"
@@ -64,14 +67,14 @@ export async function saveGuestRoundRobinGroups(input: {
     throw new Error("Group assignment is only available for Round Robin.")
   }
   if (stage.status !== "draft" && stage.status !== "configured") {
-    throw new Error("Groups are locked after phase generation.")
+    throw new Error("Groups are locked after stage generation.")
   }
 
   const active = document.stageEntries.filter(
     (item) => item.stage_id === stage.id && item.status === "active",
   )
   if (active.length < 2) {
-    throw new Error("Assign at least two active participants to this phase.")
+    throw new Error("Assign at least two active participants to this stage.")
   }
 
   const allowed = new Set(groupKeys(input.groupCount))
@@ -161,7 +164,7 @@ export async function saveGuestIndividualRotationSettings(input: {
     throw new Error("These settings are only available for Individual Rotation.")
   }
   if (stage.status !== "draft" && stage.status !== "configured") {
-    throw new Error("Individual Rotation settings are locked after phase generation.")
+    throw new Error("Individual Rotation settings are locked after stage generation.")
   }
 
   const now = new Date().toISOString()
@@ -212,14 +215,14 @@ function buildGenerationEntries(document: GuestTournamentDocument, stageId: stri
     .sort((a, b) => a.sort_order - b.sort_order)
 
   if (activeStageEntries.length < 2) {
-    throw new Error("At least two active phase participants are required.")
+    throw new Error("At least two active stage participants are required.")
   }
 
   const generationEntries: StageGenerationEntry[] = activeStageEntries.map(
     (stageEntry) => {
       const entry = rosterById.get(stageEntry.competition_entry_id)
       if (!entry) {
-        throw new Error("A phase participant references a tournament participant that no longer exists.")
+        throw new Error("A stage participant references a tournament participant that no longer exists.")
       }
       if (entry.status !== "active") {
         throw new Error(`Tournament participant \"${entry.display_name}\" is not active.`)
@@ -351,14 +354,14 @@ export async function generateGuestCompetitionStage(input: {
   const stage = document.stages.find((item) => item.id === input.stageId)
   if (!stage) throw new Error("Guest stage not found.")
   if (stage.status === "generated" || stage.status === "running" || stage.status === "completed") {
-    throw new Error("This phase has already been generated.")
+    throw new Error("This stage has already been generated.")
   }
   if (
     stage.stageType !== "elimination" &&
     stage.stageType !== "round_robin" &&
     stage.stageType !== "individual_rotation"
   ) {
-    throw new Error("Guest generation for this phase format will be enabled in the next step.")
+    throw new Error("Guest generation for this stage format will be enabled in the next step.")
   }
 
   const { activeStageEntries, generationEntries } = buildGenerationEntries(document, stage.id)
@@ -382,7 +385,7 @@ export async function generateGuestCompetitionStage(input: {
     const requestedRounds = stage.settings.requestedRounds
 
     if (typeof courtCount !== "number" || !Number.isInteger(courtCount) || courtCount < 1 || courtCount > 5) {
-      throw new Error("Configure between 1 and 4 courts before generation.")
+      throw new Error("Configure between 1 and 5 courts before generation.")
     }
     if (typeof requestedRounds !== "number" || !Number.isInteger(requestedRounds) || requestedRounds < 1 || requestedRounds > 20) {
       throw new Error("Choose between 1 and 12 rounds before generation.")
@@ -400,10 +403,11 @@ export async function generateGuestCompetitionStage(input: {
     if (
       seedCount !== 0 &&
       seedCount !== 2 &&
+      seedCount !== 3 &&
       seedCount !== 4
     ) {
       throw new Error(
-        "Individual Rotation templates support 0, 2 or 4 seeded players.",
+        "Individual Rotation templates support 0, 2, 3 or 4 Keep Apart players.",
       )
     }
 
@@ -440,7 +444,7 @@ export async function generateGuestCompetitionStage(input: {
 
     if (!individualRotationTemplate) {
       throw new Error(
-        `No precomputed Individual Rotation template is available for ${generationEntries.length} players, ${usableCourtCount} usable court(s), ${seedCount} seed(s), and ${requestedRounds} round(s).`,
+        `No precomputed Individual Rotation template is available for ${generationEntries.length} players, ${usableCourtCount} usable court(s), ${seedCount} Keep Apart player(s), and ${requestedRounds} round(s).`,
       )
     }
 
@@ -456,7 +460,7 @@ export async function generateGuestCompetitionStage(input: {
     options: generationOptions,
   })
 
-  if (!result.success) throw new Error(result.message ?? "Phase generation failed.")
+  if (!result.success) throw new Error(result.message ?? "Stage generation failed.")
 
   let matches: MatchRow[]
   let stageMetadata: Record<string, unknown>
@@ -551,4 +555,202 @@ export async function generateGuestCompetitionStage(input: {
   )
 
   return summary
+}
+
+
+function guestRotationHistory(
+  matches: MatchRow[],
+  playerIds: readonly string[],
+): FairnessRound[] {
+  const grouped = new Map<number, MatchRow[]>()
+
+  for (const match of matches) {
+    if (!match.round_number) continue
+    grouped.set(match.round_number, [...(grouped.get(match.round_number) ?? []), match])
+  }
+
+  return [...grouped.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([roundNumber, roundMatches]) => {
+      const active = new Set<string>()
+
+      const mapped = roundMatches.map((match) => {
+        const sideA =
+          match.side_a.type === "rotation_team" && Array.isArray(match.side_a.entryIds)
+            ? match.side_a.entryIds
+            : []
+        const sideB =
+          match.side_b.type === "rotation_team" && Array.isArray(match.side_b.entryIds)
+            ? match.side_b.entryIds
+            : []
+
+        if (sideA.length !== 2 || sideB.length !== 2) {
+          throw new Error(`Round ${roundNumber} contains an invalid rotation team.`)
+        }
+
+        for (const playerId of [...sideA, ...sideB]) active.add(playerId)
+
+        return {
+          id: match.id,
+          roundNumber,
+          courtNumber: match.match_order,
+          teamA: [sideA[0], sideA[1]] as const,
+          teamB: [sideB[0], sideB[1]] as const,
+        }
+      })
+
+      return {
+        roundNumber,
+        matches: mapped,
+        restingPlayerIds: playerIds.filter((playerId) => !active.has(playerId)),
+      }
+    })
+}
+
+export async function addGuestIndividualRotationRound(input: {
+  competitionId: string
+  stageId: string
+}): Promise<{
+  success: true
+  roundNumber: number
+  matchCount: number
+  fairnessRawPenalty: number
+}> {
+  const document = requireDocument(await localStorageGuestAdapter.get(input.competitionId))
+  const stage = document.stages.find((item) => item.id === input.stageId)
+
+  if (!stage) throw new Error("Guest stage not found.")
+  if (stage.stageType !== "individual_rotation") {
+    throw new Error("Stage is not Individual Rotation.")
+  }
+  if (stage.status !== "generated" && stage.status !== "running") {
+    throw new Error("A round can only be added after generation.")
+  }
+
+  const { generationEntries } = buildGenerationEntries(document, stage.id)
+  if (generationEntries.length < 4 || generationEntries.length > 20) {
+    throw new Error("Individual Rotation requires between 4 and 20 active players.")
+  }
+
+  const players: FairnessPlayer[] = generationEntries.map((entry) => ({
+    id: entry.id,
+    displayName: entry.displayName,
+    seed: typeof entry.seed === "number" && entry.seed > 0 ? entry.seed : null,
+  }))
+
+  const existing = document.matches
+    .filter((match) => match.stage_id === stage.id && match.match_type === "individual_rotation")
+    .sort((a, b) =>
+      a.round_number - b.round_number ||
+      a.match_order - b.match_order ||
+      a.match_number - b.match_number,
+    )
+
+  if (!existing.length) throw new Error("No generated schedule found.")
+
+  const history = guestRotationHistory(existing, players.map((player) => player.id))
+  const nextRound = Math.max(...history.map((round) => round.roundNumber)) + 1
+
+  const configuredCourts =
+    typeof stage.settings.courtCount === "number" ? stage.settings.courtCount : 1
+  const courtCount = Math.max(
+    1,
+    Math.min(configuredCourts, Math.floor(players.length / 4)),
+  )
+
+  const candidates = buildGuidedCandidateRounds(players, {
+    roundNumber: nextRound,
+    courtCount,
+    history,
+  })
+  if (!candidates.length) throw new Error("Unable to generate another fair round.")
+
+  const best = candidates
+    .map((candidate) => ({
+      candidate,
+      penalty: scoreFairnessSchedule(players, {
+        rounds: [...history, candidate],
+      }).total,
+    }))
+    .sort((a, b) => a.penalty - b.penalty)[0]
+
+  const startMatchNumber =
+    Math.max(...existing.map((match) => match.match_number)) + 1
+  const now = new Date().toISOString()
+
+  const appendedMatches = completeMatchRows(
+    best.candidate.matches.map((match, index) => ({
+      id: globalThis.crypto?.randomUUID?.() ?? `guest_match_${Date.now()}_${index}`,
+      competition_id: stage.competitionId,
+      stage_id: stage.id,
+      match_number: startMatchNumber + index,
+      visible_match_number: startMatchNumber + index,
+      status: "ready",
+      phase_key: null,
+      group_key: null,
+      round_number: nextRound,
+      match_order: index + 1,
+      match_type: "individual_rotation",
+      court_id: null,
+      court_label: `Court ${match.courtNumber ?? index + 1}`,
+      side_a: { type: "rotation_team", entryIds: [...match.teamA] },
+      side_b: { type: "rotation_team", entryIds: [...match.teamB] },
+      score: {},
+      winner_side: null,
+      loser_side: null,
+      is_bye: false,
+      next_match_id: null,
+      next_match_slot: null,
+      finish_type: "normal",
+      retired_side: null,
+      scheduled_at: null,
+      started_at: null,
+      completed_at: null,
+      metadata: {
+        engine: "individual_rotation",
+        roundNumber: nextRound,
+        courtNumber: match.courtNumber ?? index + 1,
+        restingPlayerIds: [...best.candidate.restingPlayerIds],
+        appended: true,
+      },
+      created_at: now,
+      updated_at: now,
+    })),
+  )
+
+  const currentStageMatchCount =
+    document.matches.filter((match) => match.stage_id === stage.id).length
+
+  await localStorageGuestAdapter.save(
+    touchGuestDocument({
+      ...document,
+      stages: document.stages.map((item) =>
+        item.id === stage.id
+          ? {
+              ...item,
+              metadata: {
+                ...(item.metadata ?? {}),
+                roundCount: nextRound,
+                matchCount: currentStageMatchCount + appendedMatches.length,
+                fairnessRawPenalty: best.penalty,
+                appendRound: {
+                  lastRoundNumber: nextRound,
+                  fairnessRawPenalty: best.penalty,
+                  updatedAt: now,
+                },
+              },
+              updatedAt: now,
+            }
+          : item,
+      ),
+      matches: [...document.matches, ...appendedMatches],
+    }),
+  )
+
+  return {
+    success: true,
+    roundNumber: nextRound,
+    matchCount: appendedMatches.length,
+    fairnessRawPenalty: best.penalty,
+  }
 }

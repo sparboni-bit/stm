@@ -11,7 +11,7 @@ import {
   listGuestCompetitionWorkspaces,
 } from "@/modules/guest-storage/services"
 
-const GUEST_WORKSPACE_TITLE = "Guest Tournament"
+const GUEST_WORKSPACE_TITLE = "Pickleball Tournament"
 
 export default function GuestHomePage() {
   const router = useRouter()
@@ -57,7 +57,7 @@ export default function GuestHomePage() {
           setError(
             cause instanceof Error
               ? cause.message
-              : "Unable to start Guest Mode.",
+              : "Unable to open the tournament workspace.",
           )
         }
       }
@@ -78,7 +78,7 @@ export default function GuestHomePage() {
         {error ? (
           <div className="border border-red-200 bg-red-50 p-5">
             <h1 className="font-bold text-red-800">
-              Guest Mode unavailable
+              Tournament workspace unavailable
             </h1>
             <p className="mt-2 text-sm text-red-700">
               {error}
@@ -94,7 +94,7 @@ export default function GuestHomePage() {
         ) : (
           <div className="border border-neutral-200 bg-white p-6 text-center shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-400">
-              Guest Mode
+              Pickleball Arena
             </p>
             <h1 className="mt-2 text-xl font-bold text-neutral-950">
               Tournament Management

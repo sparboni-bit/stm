@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { RegisteredShell } from "@/components/layout/RegisteredShell"
 import { getCurrentWorkspace } from "@/lib/workspace/getCurrentWorkspace"
 import { listRosters } from "@/modules/rosters/repositories/roster.repository"
+import { RosterDeleteButton } from "@/modules/rosters/components/RosterDeleteButton"
 
 export default async function RostersPage() {
   const currentWorkspace = await getCurrentWorkspace()
@@ -35,7 +36,7 @@ export default async function RostersPage() {
 
           <Link
             href="/rosters/new"
-            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-950 bg-yellow-300 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-yellow-200"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center border border-slate-950 bg-[var(--arena-yellow)] px-4 py-2 text-sm font-black text-slate-950 transition hover:brightness-95"
           >
             + New Roster
           </Link>
@@ -55,13 +56,13 @@ export default async function RostersPage() {
             </Link>
           </section>
         ) : (
-          <section className="mt-7 grid gap-3 lg:grid-cols-2">
+          <section className="mt-7 grid gap-3 sm:grid-cols-2">
             {rosters.map((roster) => (
               <article
                 key={roster.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4"
+                className="border border-slate-200 bg-white p-4 shadow-sm"
               >
-                <div className="flex min-h-[88px] flex-col">
+                <div className="flex min-h-[76px] flex-col">
                   <h2 className="text-base font-black text-slate-950">
                     {roster.name}
                   </h2>
@@ -72,12 +73,19 @@ export default async function RostersPage() {
                   ) : null}
                 </div>
 
-                <Link
-                  href={`/rosters/${roster.id}`}
-                  className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl bg-neutral-900 px-4 text-sm font-bold text-white transition hover:bg-neutral-800"
-                >
-                  Open
-                </Link>
+                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <Link
+                    href={`/rosters/${roster.id}`}
+                    className="flex min-h-11 items-center justify-center rounded-xl bg-neutral-950 px-4 text-sm font-bold text-white transition hover:bg-neutral-800"
+                  >
+                    Open
+                  </Link>
+
+                  <RosterDeleteButton
+                    rosterId={roster.id}
+                    rosterName={roster.name}
+                  />
+                </div>
               </article>
             ))}
           </section>

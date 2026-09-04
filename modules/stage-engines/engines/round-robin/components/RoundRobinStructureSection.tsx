@@ -80,11 +80,11 @@ export function RoundRobinStructureSection() {
   return (
     <section className="space-y-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">
           Round Robin
         </p>
 
-        <h2 className="mt-1 text-xl font-semibold text-slate-950">
+        <h2 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
           Structure
         </h2>
 
@@ -94,9 +94,9 @@ export function RoundRobinStructureSection() {
         </p>
       </div>
 
-      <div className="border border-slate-200 bg-slate-50 p-4 sm:p-5">
+      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Play mode
             </p>
@@ -111,13 +111,13 @@ export function RoundRobinStructureSection() {
                   Singles / Doubles
                 </p>
                 <p className="text-xs text-slate-500">
-                  Play mode is determined by the participants in this phase.
+                  Play mode is determined by the participants in this stage.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Groups
             </p>
@@ -127,7 +127,7 @@ export function RoundRobinStructureSection() {
                 type="button"
                 onClick={() => changeGroupCount(-1)}
                 disabled={!editable || isPending || groupCount <= 1}
-                className="h-10 w-10 border border-slate-300 bg-white text-lg font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                className="grid h-10 w-10 place-items-center rounded-full border border-neutral-300 bg-white text-lg font-bold text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Decrease group count"
               >
                 −
@@ -146,7 +146,7 @@ export function RoundRobinStructureSection() {
                 type="button"
                 onClick={() => changeGroupCount(1)}
                 disabled={!editable || isPending || groupCount >= 4}
-                className="h-10 w-10 border border-slate-300 bg-white text-lg font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                className="grid h-10 w-10 place-items-center rounded-full border border-neutral-300 bg-white text-lg font-bold text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Increase group count"
               >
                 +
@@ -160,7 +160,7 @@ export function RoundRobinStructureSection() {
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Distribution
             </p>
@@ -172,7 +172,7 @@ export function RoundRobinStructureSection() {
             </p>
           </div>
 
-          <div className="border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Seeding
             </p>
@@ -187,13 +187,13 @@ export function RoundRobinStructureSection() {
         </div>
 
         {!editable && (
-          <div className="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
             Structure is locked because this Stage has already been generated.
           </div>
         )}
 
         {message && (
-          <div className="mt-4 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+          <div className="mt-4 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
             {message}
           </div>
         )}
@@ -203,7 +203,7 @@ export function RoundRobinStructureSection() {
             type="button"
             onClick={save}
             disabled={!editable || isPending}
-            className="min-h-11 border border-slate-950 bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="min-h-11 rounded-xl bg-[var(--arena-yellow)] px-5 py-2.5 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isPending ? "Saving..." : "Save structure"}
           </button>

@@ -121,14 +121,14 @@ export function GuestRosterManager({
       <div className="mb-5 rounded-[18px] bg-neutral-100 px-5 py-4">
         <div className="flex items-start gap-3">
           <Image
-            src="/brand/logo_round_black.png"
+            src="/brand/pickleball-arena-logo.png"
             alt=""
             width={40}
             height={40}
-            className="h-10 w-10 shrink-0"
+            className="h-10 w-10 shrink-0 object-contain"
           />
           <p className="text-[13px] leading-5 text-neutral-950">
-            <strong>Guest tournament.</strong>{" "}
+            <strong>Tournament roster.</strong>{" "}
             Add players here once, then reuse the same roster across all stages.
             Doubles teams are built from these players.
           </p>
@@ -148,7 +148,7 @@ export function GuestRosterManager({
       </div>
 
       {error ? (
-        <div className="mb-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       ) : null}
@@ -164,12 +164,12 @@ export function GuestRosterManager({
             setDisplayName(event.target.value)
           }
           placeholder="Player name"
-          className="min-h-12 min-w-0 flex-1 border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-950"
+          className="min-h-12 min-w-0 flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-950"
         />
 
         <button
           disabled={working || !displayName.trim()}
-          className="min-h-12 bg-[var(--arena-yellow)] px-4 py-3 text-sm font-semibold text-[var(--arena-black)] disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-[var(--arena-yellow)] px-4 py-3 text-sm font-semibold text-[var(--arena-black)] disabled:opacity-50"
         >
           Add player
         </button>
@@ -180,7 +180,7 @@ export function GuestRosterManager({
           type="button"
           disabled={working}
           onClick={() => setBulkOpen((value) => !value)}
-          className="min-h-10 border border-neutral-300 px-4 text-sm font-semibold text-neutral-900"
+          className="min-h-10 rounded-xl border border-neutral-300 px-4 text-sm font-semibold text-neutral-900"
         >
           {bulkOpen ? "Close Bulk Add" : "Bulk Add Players"}
         </button>
@@ -189,7 +189,7 @@ export function GuestRosterManager({
           type="button"
           disabled={working || players.length < 2}
           onClick={() => setTeamsOpen((value) => !value)}
-          className="min-h-10 border border-neutral-950 bg-neutral-950 px-4 text-sm font-semibold text-white disabled:opacity-40"
+          className="min-h-10 rounded-xl border border-neutral-950 bg-neutral-950 px-4 text-sm font-semibold text-white disabled:opacity-40"
         >
           {teamsOpen
             ? "Close Teams"
@@ -198,7 +198,7 @@ export function GuestRosterManager({
       </div>
 
       {bulkOpen ? (
-        <div className="mb-5 border border-neutral-200 bg-neutral-50 p-4">
+        <div className="mb-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <p className="text-sm font-semibold text-neutral-950">
             Bulk add players
           </p>
@@ -212,11 +212,11 @@ export function GuestRosterManager({
               setBulkText(event.target.value)
             }
             rows={8}
-            className="mt-3 w-full border border-neutral-300 bg-white px-3 py-3 font-mono text-sm"
+            className="mt-3 w-full rounded-xl border border-neutral-300 bg-white px-3 py-3 font-mono text-sm"
           />
 
           {preview.errors.length > 0 ? (
-            <div className="mt-3 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {preview.errors.map((message) => (
                 <div key={message}>{message}</div>
               ))}
@@ -245,7 +245,7 @@ export function GuestRosterManager({
                   setBulkOpen(false)
                 })
               }
-              className="min-h-10 bg-[var(--arena-yellow)] px-4 text-sm font-semibold text-[var(--arena-black)] disabled:opacity-50"
+              className="min-h-10 rounded-xl bg-[var(--arena-yellow)] px-4 text-sm font-semibold text-[var(--arena-black)] disabled:opacity-50"
             >
               Add {preview.rows.length}
             </button>
@@ -276,7 +276,7 @@ export function GuestRosterManager({
                   onChange={(event) =>
                     setEditingName(event.target.value)
                   }
-                  className="min-h-10 min-w-0 flex-1 border border-neutral-300 px-3"
+                  className="min-h-10 min-w-0 flex-1 rounded-xl border border-neutral-300 px-3"
                 />
 
                 <button
@@ -292,7 +292,7 @@ export function GuestRosterManager({
                       setEditingId(null)
                     })
                   }
-                  className="min-h-10 bg-[var(--arena-yellow)] px-3 text-xs font-semibold text-[var(--arena-black)]"
+                  className="min-h-10 rounded-xl bg-[var(--arena-yellow)] px-3 text-xs font-semibold text-[var(--arena-black)]"
                 >
                   Save
                 </button>
@@ -300,7 +300,7 @@ export function GuestRosterManager({
                 <button
                   type="button"
                   onClick={() => setEditingId(null)}
-                  className="min-h-10 border border-neutral-300 px-3 text-xs font-semibold"
+                  className="min-h-10 rounded-xl border border-neutral-300 px-3 text-xs font-semibold"
                 >
                   Cancel
                 </button>
@@ -319,7 +319,7 @@ export function GuestRosterManager({
                       setEditingId(entry.id)
                       setEditingName(entry.display_name)
                     }}
-                    className="min-h-10 border border-neutral-300 px-3 text-sm font-medium"
+                    className="min-h-10 rounded-xl border border-neutral-300 px-3 text-sm font-medium"
                   >
                     Rename
                   </button>
@@ -343,7 +343,7 @@ export function GuestRosterManager({
                         }),
                       )
                     }}
-                    className="min-h-10 border border-red-200 px-3 text-sm font-medium text-red-700"
+                    className="min-h-10 rounded-xl border border-red-200 px-3 text-sm font-medium text-red-700"
                   >
                     Remove
                   </button>
@@ -354,7 +354,7 @@ export function GuestRosterManager({
         ))}
 
         {players.length === 0 ? (
-          <div className="border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500">
+          <div className="rounded-2xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500">
             No players yet.
           </div>
         ) : null}

@@ -6,7 +6,7 @@ export const individualRotationEngineManifest: StageEngineManifest = {
   description:
     "Individual ranking competition based on rotating doubles pairings optimized for participation, partner and opponent fairness.",
   version: "0.1.0",
-  defaultSection: "overview",
+  defaultSection: "planner",
   capabilities: {
     supportsEntries: true,
     supportsGeneration: true,
@@ -18,53 +18,39 @@ export const individualRotationEngineManifest: StageEngineManifest = {
   },
   workflow: [
     {
-      id: "overview",
-      label: "Overview",
+      id: "planner",
+      label: "Stage Setup",
       description:
-        "Stage information, lifecycle status and Individual Rotation capabilities.",
-      milestone: "overview",
+        "Configure courts, timing and the number of rounds for the Individual Rotation Stage.",
+      milestone: "configure",
     },
     {
       id: "entries",
-      label: "Entries",
+      label: "Select Players",
       description:
-        "Assign individual players to this Stage and define Stage-specific seeds.",
-      milestone: "entries",
-    },
-    {
-      id: "planner",
-      label: "Planner",
-      description:
-        "Configure courts, timing and round targets, then select the rotation schedule.",
+        "Choose a Saved Roster, select the Stage players and mark Keep Apart players.",
       milestone: "configure",
     },
     {
       id: "fairness",
-      label: "Fairness",
+      label: "Rotation",
       description:
-        "Preview the selected schedule before generation, then audit the generated schedule.",
-      milestone: "generate",
+        "See who plays and who rests in every generated round.",
+      milestone: "play",
     },
     {
       id: "play",
-      label: "Play",
+      label: "Matches",
       description:
-        "Run generated rounds, manage courts and enter match results.",
+        "Run generated rounds and enter match results.",
       milestone: "play",
     },
     {
       id: "ranking",
-      label: "Ranking",
+      label: "Standings",
       description:
         "View the individual standings calculated from completed doubles matches.",
       milestone: "play",
     },
-    {
-      id: "reports",
-      label: "Reports",
-      description:
-        "Print and export rounds, standings and fairness information.",
-      milestone: "play",
-    },
-  ]
+  ],
 }

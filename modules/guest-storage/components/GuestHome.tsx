@@ -1,7 +1,6 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 
 export function GuestHome({
   playerCount,
@@ -40,17 +39,16 @@ export function GuestHome({
       <div className="mt-5 rounded-[18px] bg-neutral-100 px-5 py-5 lg:mt-0">
         <div className="flex items-start gap-3">
           <Image
-            src="/brand/logo_round_black.png"
+            src="/brand/pickleball-arena-logo.png"
             alt=""
             width={40}
             height={40}
-            className="h-10 w-10 shrink-0"
+            className="h-10 w-10 shrink-0 object-contain"
           />
           <p className="text-[13px] leading-5 text-neutral-950">
-            <strong>You&apos;re browsing as a guest.</strong>{" "}
-            Nothing you create is saved — starting over means starting from
-            scratch. Guest mode keeps things simple, with fewer settings than a
-            full account.
+            <strong>Ready to run your tournament.</strong>{" "}
+            Build your player list once, create one or more stages and manage
+            matches and standings directly from this device.
           </p>
         </div>
       </div>
@@ -66,8 +64,8 @@ export function GuestHome({
           </span>
         </h1>
         <p className="mt-3 max-w-[620px] text-[15px] leading-6 text-slate-500">
-          Pick one to get started — you can always create an account later to
-          save your work.
+          Pick one to get started. Build your player list or create the next
+          stage of your tournament.
         </p>
       </div>
 
@@ -124,15 +122,6 @@ export function GuestHome({
         </button>
       </div>
 
-      <p className="mt-5 text-center text-[12px] text-slate-500">
-        Want to save your tournaments?{" "}
-        <Link
-          href="/login?mode=signup"
-          className="font-bold text-neutral-950 underline decoration-[var(--arena-yellow)] decoration-2 underline-offset-2"
-        >
-          Create a free account
-        </Link>
-      </p>
     </div>
   )
 }

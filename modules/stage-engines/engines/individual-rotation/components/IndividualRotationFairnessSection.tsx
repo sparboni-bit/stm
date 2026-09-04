@@ -66,10 +66,10 @@ function PlayRestMatrix({
           Participation by round
         </p>
         <h3 className="mt-1 text-lg font-semibold text-slate-950">
-          Play / Rest matrix
+          Rotation · Play / Rest
         </h3>
         <p className="mt-1 text-sm leading-6 text-slate-500">
-          A round-by-round view of who plays and who rests.
+          Round-by-round view of who plays and who rests.
           Consecutive rests are highlighted.
         </p>
       </div>
@@ -241,7 +241,7 @@ export function IndividualRotationFairnessSection() {
     try {
       await generateStage()
       setGenerationMessage(
-        "Phase generated successfully.",
+        "Stage generated successfully.",
       )
       refresh()
       router.push("?section=play")
@@ -249,7 +249,7 @@ export function IndividualRotationFairnessSection() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to generate the phase.",
+          : "Unable to generate the stage.",
       )
     } finally {
       setGenerating(false)
@@ -287,12 +287,12 @@ export function IndividualRotationFairnessSection() {
         <h2 className="mt-1 text-xl font-semibold text-slate-950">
           {generated
             ? "Generated schedule audit"
-            : "Fairness Preview"}
+            : "Rotation Preview"}
         </h2>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
           {generated
-            ? "Analysis of the schedule generated for this phase. Match results do not affect these metrics."
-            : "Review the selected schedule before creating the phase matches. No matches have been saved yet."}
+            ? "Analysis of the schedule generated for this stage. Match results do not affect these metrics."
+            : "Review the selected schedule before creating the stage matches. No matches have been saved yet."}
         </p>
       </div>
 

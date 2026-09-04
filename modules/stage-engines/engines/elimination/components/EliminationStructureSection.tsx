@@ -67,13 +67,13 @@ export function EliminationStructureSection() {
       await configureStage()
 
       setMessage(
-        "Structure confirmed. You can now add participants to this phase.",
+        "Structure confirmed. You can now add participants to this Stage.",
       )
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to configure the phase.",
+          : "Unable to configure the Stage.",
       )
     } finally {
       setPending(false)
@@ -97,7 +97,7 @@ export function EliminationStructureSection() {
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Format
           </dt>
@@ -107,7 +107,7 @@ export function EliminationStructureSection() {
           </dd>
         </div>
 
-        <div className="border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Seeding
           </dt>
@@ -119,7 +119,7 @@ export function EliminationStructureSection() {
           </dd>
         </div>
 
-        <div className="border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Third-place match
           </dt>
@@ -132,7 +132,7 @@ export function EliminationStructureSection() {
         </div>
       </dl>
 
-    <div className="border border-slate-200 bg-white p-4">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold text-slate-950">
@@ -140,7 +140,7 @@ export function EliminationStructureSection() {
           </h3>
 
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-            Confirm the phase structure before assigning
+            Confirm the Stage structure before assigning
             participants and seeds.
           </p>
         </div>
@@ -149,12 +149,12 @@ export function EliminationStructureSection() {
           type="button"
           onClick={handleConfigure}
           disabled={!canConfigure || pending}
-          className="inline-flex h-11 items-center justify-center bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-black text-slate-950 transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
         >
           {pending
             ? "Saving..."
             : canConfigure
-              ? "Continue to Roster"
+              ? "Continue to Players"
               : "Structure confirmed"}
         </button>
       </div>
@@ -162,7 +162,7 @@ export function EliminationStructureSection() {
       {message ? (
         <div
           role="status"
-          className="mt-4 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700"
+          className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700"
         >
           {message}
         </div>
@@ -171,20 +171,20 @@ export function EliminationStructureSection() {
       {error ? (
         <div
           role="alert"
-          className="mt-4 border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
         >
           {error}
         </div>
       ) : null}
 
       {!canConfigure ? (
-        <div className="mt-4 border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
           <p className="text-sm font-semibold text-slate-700">
             Structure confirmed
           </p>
 
           <p className="mt-1 text-sm text-slate-500">
-            Continue to Roster to assign participants
+            Continue to Players to assign participants
             and define Stage-specific seeds.
           </p>
         </div>

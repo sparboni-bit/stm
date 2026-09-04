@@ -33,7 +33,7 @@ export function StageCompletionPanel() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to evaluate phase progress.",
+          : "Unable to evaluate stage progress.",
       )
     } finally {
       setLoading(false)
@@ -55,7 +55,7 @@ export function StageCompletionPanel() {
         setError(
           caughtError instanceof Error
             ? caughtError.message
-            : "Unable to complete the phase.",
+            : "Unable to complete the stage.",
         )
       }
     })
@@ -64,7 +64,7 @@ export function StageCompletionPanel() {
   if (loading) {
     return (
       <div className="border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-        Checking phase progress...
+        Checking stage progress...
       </div>
     )
   }
@@ -72,7 +72,7 @@ export function StageCompletionPanel() {
   if (!state) {
     return (
       <div className="border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-        {error ?? "Phase progress unavailable."}
+        {error ?? "Stage progress unavailable."}
       </div>
     )
   }
@@ -80,17 +80,17 @@ export function StageCompletionPanel() {
   return (
     <section className="border border-slate-200 bg-white p-5">
       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-        Phase progress
+        Stage progress
       </p>
 
       <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-base font-bold text-slate-950">
             {state.alreadyCompleted
-              ? "Phase completed"
+              ? "Stage completed"
               : state.canComplete
                 ? "Ready to complete"
-                : "Phase still in progress"}
+                : "Stage still in progress"}
           </h3>
 
           <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -106,7 +106,7 @@ export function StageCompletionPanel() {
             onClick={complete}
             className="min-h-11 bg-slate-950 px-5 text-sm font-bold text-white disabled:bg-slate-300"
           >
-            {pending ? "Completing..." : "Complete phase"}
+            {pending ? "Completing..." : "Complete stage"}
           </button>
         ) : null}
       </div>
@@ -114,7 +114,7 @@ export function StageCompletionPanel() {
       {state.championDisplayName ? (
         <div className="mt-4 border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700">
-            Phase winner
+            Stage winner
           </p>
           <p className="mt-1 text-lg font-bold text-emerald-950">
             {state.championDisplayName}

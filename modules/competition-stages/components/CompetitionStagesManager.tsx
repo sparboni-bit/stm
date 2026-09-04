@@ -6,12 +6,15 @@ import {
   useActionState,
   useEffect,
   useRef,
+  useState,
 } from "react"
 
 import {
   createCompetitionStageAction,
   type CreateCompetitionStageActionState,
 } from "../actions/createCompetitionStage"
+
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 
 import {
   deleteCompetitionStageAction,
@@ -39,28 +42,16 @@ const stageTypeOptions: Array<{
   label: string
 }> = [
   {
+    value: "individual_rotation",
+    label: "Individual Rotation",
+  },
+  {
     value: "round_robin",
     label: "Round Robin",
   },
   {
     value: "elimination",
     label: "Elimination",
-  },
-  {
-    value: "consolation",
-    label: "Consolation",
-  },
-  {
-    value: "individual_rotation",
-    label: "Individual Rotation",
-  },
-  {
-    value: "swiss",
-    label: "Swiss",
-  },
-  {
-    value: "ladder",
-    label: "Ladder",
   },
 ]
 
@@ -116,15 +107,6 @@ const stageStatusClasses: Record<
     "border-slate-300 bg-slate-200 text-slate-700",
 }
 
-function canDeleteStage(
-  status: CompetitionStageStatus,
-): boolean {
-  return (
-    status === "draft" ||
-    status === "configured"
-  )
-}
-
 export function CompetitionStagesManager({
   competitionId,
   stages,
@@ -132,6 +114,16 @@ export function CompetitionStagesManager({
 }: CompetitionStagesManagerProps) {
   const formRef =
     useRef<HTMLFormElement>(null)
+
+  const deleteFormRef =
+    useRef<HTMLFormElement>(null)
+
+  const [
+    stageToDelete,
+    setStageToDelete,
+  ] = useState<CompetitionStage | null>(
+    null,
+  )
 
   const createAction =
     createCompetitionStageAction.bind(
@@ -203,9 +195,8 @@ export function CompetitionStagesManager({
                 id="stage-name"
                 name="name"
                 type="text"
-                required
                 maxLength={100}
-                placeholder="Example: Qualification"
+                placeholder="Optional — e.g. IR1, RR1, EL1 is generated automatically"
                 disabled={createPending}
                 className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
@@ -302,10 +293,6 @@ export function CompetitionStagesManager({
         ) : (
           <ol className="mt-5 space-y-3">
             {stages.map((stage) => {
-              const deletable =
-                !locked &&
-                canDeleteStage(stage.status)
-
               const deleteAction =
                 deleteCompetitionStageAction.bind(
                   null,
@@ -370,29 +357,44 @@ export function CompetitionStagesManager({
                       Open stage
                     </Link>
 
-                    {deletable ? (
-                      <form action={deleteAction}>
-                        <input
-                          type="hidden"
-                          name="stageId"
-                          value={stage.id}
-                        />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setStageToDelete(stage)
+                      }
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
 
-                        <button
-                          type="submit"
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                    {stageToDelete?.id ===
+                    stage.id ? (
+                      <>
+                        <form
+                          ref={deleteFormRef}
+                          action={deleteAction}
+                          className="hidden"
                         >
-                          Delete
-                        </button>
-                      </form>
-                    ) : (
-                      <span className="inline-flex h-10 items-center justify-center gap-1 px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        <span aria-hidden="true">
-                          🔒
-                        </span>
-                        Locked
-                      </span>
-                    )}
+                          <input
+                            type="hidden"
+                            name="stageId"
+                            value={stage.id}
+                          />
+                        </form>
+
+                        <ConfirmDialog
+                          open
+                          title={`Delete stage "${stage.name}"?`}
+                          description="This will permanently delete the stage, its matches, results and related data."
+                          onCancel={() =>
+                            setStageToDelete(null)
+                          }
+                          onConfirm={() => {
+                            deleteFormRef.current?.requestSubmit()
+                          }}
+                        />
+                      </>
+                    ) : null}
                   </div>
                 </li>
               )

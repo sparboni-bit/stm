@@ -47,6 +47,61 @@ type StagePageProps = {
   }>
 }
 
+
+type SidebarStageItem = {
+  label: string
+  section: string
+}
+
+function getStageSidebarItems(
+  stageType: string,
+): SidebarStageItem[] {
+  switch (stageType) {
+    case "individual_rotation":
+      return [
+        { label: "Select Players", section: "entries" },
+        { label: "Stage Setup", section: "planner" },
+        { label: "Rotation", section: "fairness" },
+        { label: "Matches", section: "play" },
+        { label: "Standings", section: "ranking" },
+      ]
+
+    case "elimination":
+      return [
+        { label: "Setup", section: "structure" },
+        { label: "Players", section: "entries" },
+        { label: "Bracket", section: "bracket" },
+        { label: "Matches", section: "matches" },
+      ]
+
+    case "round_robin":
+      return [
+        { label: "Setup", section: "structure" },
+        { label: "Players", section: "entries" },
+        { label: "Groups", section: "groups" },
+        { label: "Matches", section: "matches" },
+        { label: "Standings", section: "ranking" },
+      ]
+
+    default:
+      return []
+  }
+}
+
+function getDefaultStageSection(
+  stageType: string,
+) {
+  switch (stageType) {
+    case "individual_rotation":
+      return "planner"
+    case "elimination":
+    case "round_robin":
+      return "structure"
+    default:
+      return ""
+  }
+}
+
 export default async function StagePage({
   params,
   searchParams,
@@ -89,6 +144,22 @@ export default async function StagePage({
     notFound()
   }
 
+  const requestedSection =
+    Array.isArray(section)
+      ? section[0]
+      : section
+
+  const activeStageSection =
+    requestedSection ??
+    getDefaultStageSection(
+      stage.stageType,
+    )
+
+  const stageSidebarItems =
+    getStageSidebarItems(
+      stage.stageType,
+    )
+
   const [
     roster,
     stageEntries,
@@ -118,24 +189,28 @@ export default async function StagePage({
 
         items: [
           {
-            label: "Home",
-            href:
-              `/competitions/${competitionId}` +
-              "?section=configuration",
-            active: false,
-          },
-
-          {
             label: "Stages",
             href:
               `/competitions/${competitionId}` +
               "?section=stages",
-            active: true,
+            active: false,
           },
+          ...stageSidebarItems.map(
+            (item) => ({
+              label: item.label,
+              href:
+                `/competitions/${competitionId}` +
+                `/stages/${stageId}` +
+                `?section=${item.section}`,
+              active:
+                item.section ===
+                activeStageSection,
+            }),
+          ),
         ],
       }}
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto w-full max-w-7xl">
         <div className="mb-4 md:hidden">
           <Link
             href={
@@ -151,9 +226,7 @@ export default async function StagePage({
         <StageManager
           stage={stage}
           requestedSection={
-            Array.isArray(section)
-              ? section[0]
-              : section
+            requestedSection
           }
           roster={roster}
           stageEntries={

@@ -129,7 +129,7 @@ export function EliminationBracketSection() {
 
   if (loading) {
     return (
-      <div className="border border-slate-200 bg-white px-5 py-12 text-center text-sm font-semibold text-slate-500">
+      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center text-sm font-semibold text-slate-500">
         Loading bracket...
       </div>
     )
@@ -140,7 +140,7 @@ export function EliminationBracketSection() {
       <div className="space-y-4">
         <div
           role="alert"
-          className="border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
         >
           {error}
         </div>
@@ -152,7 +152,7 @@ export function EliminationBracketSection() {
               handleGenerateBracket
             }
             disabled={generating}
-            className="inline-flex min-h-11 items-center justify-center bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--arena-yellow)] px-6 py-3 text-sm font-black text-slate-950 transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {generating
               ? "Generating..."
@@ -165,7 +165,7 @@ export function EliminationBracketSection() {
 
   if (!view || view.rounds.length === 0) {
     return (
-      <div className="border border-slate-300 bg-slate-50 p-4 sm:p-5">
+      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -190,7 +190,7 @@ export function EliminationBracketSection() {
                 handleGenerateBracket
               }
               disabled={generating}
-              className="inline-flex min-h-11 w-full items-center justify-center bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--arena-yellow)] px-6 py-3 text-sm font-black text-slate-950 transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
             >
               {generating
                 ? "Generating..."
@@ -200,7 +200,7 @@ export function EliminationBracketSection() {
         </div>
 
         {generated ? (
-          <div className="mt-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
             The Stage is marked as
             generated, but no bracket
             was found.

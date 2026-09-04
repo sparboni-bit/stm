@@ -157,22 +157,21 @@ export function GuestStagesManager({
 
   return (
     <div className="mx-auto w-full max-w-[1040px]">
-      {/* Guest-specific information remains, but uses neutral Arena language. */}
       <div className="mb-6 rounded-2xl bg-neutral-100 px-5 py-4">
         <div className="flex items-start gap-3">
           <Image
-            src="/brand/logo_round_black.png"
+            src="/brand/pickleball-arena-logo.png"
             alt=""
             width={40}
             height={40}
-            className="h-10 w-10 shrink-0"
+            className="h-10 w-10 shrink-0 object-contain"
           />
 
           <p className="text-[13px] leading-5 text-neutral-950">
-            <strong>Guest mode.</strong>{" "}
-            You can add as many stages as you like — Individual Rotation,
+            <strong>Tournament stages.</strong>{" "}
+            Add as many stages as you need — Individual Rotation,
             Elimination, or Round Robin — and reuse the same player roster
-            across all of them, picking whichever players you want for each stage.
+            across them, choosing the participants for each stage.
           </p>
         </div>
       </div>

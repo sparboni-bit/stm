@@ -12,6 +12,7 @@ import {
   useStage,
   useStageActions,
 } from "@/modules/competition-stages/hooks"
+import { useRouter } from "next/navigation"
 
 import {
   assignRoundRobinGroupsAction,
@@ -29,6 +30,7 @@ type SelectedEntry = {
 export function RoundRobinGroupsSection() {
   const stage = useStage()
   const stageActions = useStageActions()
+  const router = useRouter()
 
   const [groups, setGroups] =
     useState<RoundRobinGroupView[]>([])
@@ -168,6 +170,7 @@ export function RoundRobinGroupsSection() {
         )
 
         stageActions.refresh()
+        router.push(stageActions.getSectionHref("matches"))
       } catch (error) {
         setMessage(
           error instanceof Error
@@ -214,10 +217,10 @@ export function RoundRobinGroupsSection() {
     <section className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">
             Round Robin
           </p>
-          <h2 className="mt-1 text-xl font-semibold text-slate-950">
+          <h2 className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
             Groups
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
@@ -229,7 +232,7 @@ export function RoundRobinGroupsSection() {
           type="button"
           onClick={assignGroups}
           disabled={!mounted || !editable || isPending}
-          className="min-h-11 border border-slate-950 bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 rounded-xl bg-neutral-950 px-5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending
             ? "Working..."
@@ -240,7 +243,7 @@ export function RoundRobinGroupsSection() {
       </div>
 
       {assignedCount > 0 && editable ? (
-        <div className="border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -264,7 +267,7 @@ export function RoundRobinGroupsSection() {
                   type="button"
                   onClick={() => setSelected([])}
                   disabled={!mounted || isPending}
-                  className="min-h-10 border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
+                  className="min-h-10 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
                 >
                   Clear
                 </button>
@@ -277,7 +280,7 @@ export function RoundRobinGroupsSection() {
                   selected.length !== 2 ||
                   isPending
                 }
-                className="min-h-10 border border-slate-950 bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-10 rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Swap entries
               </button>
@@ -287,13 +290,13 @@ export function RoundRobinGroupsSection() {
       ) : null}
 
       {message ? (
-        <div className="border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-slate-700">
           {message}
         </div>
       ) : null}
 
       {loading ? (
-        <div className="border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm text-slate-500">
           Loading groups...
         </div>
       ) : (
@@ -301,7 +304,7 @@ export function RoundRobinGroupsSection() {
           {groups.map((group) => (
             <article
               key={group.key}
-              className="border border-slate-200 bg-white"
+              className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"
             >
               <header className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
                 <h3 className="font-semibold text-slate-950">
@@ -376,7 +379,7 @@ export function RoundRobinGroupsSection() {
                             </span>
 
                             {entry.seed !== null ? (
-                              <span className="border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600">
+                              <span className="rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs font-bold text-slate-600">
                                 Seed {entry.seed}
                               </span>
                             ) : null}
@@ -399,7 +402,7 @@ export function RoundRobinGroupsSection() {
       )}
 
       {editable && assignedCount > 0 ? (
-        <div className="border border-slate-200 bg-slate-50 p-4 sm:p-5">
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -419,7 +422,7 @@ export function RoundRobinGroupsSection() {
               type="button"
               onClick={generateMatches}
               disabled={!mounted || isPending}
-              className="min-h-11 shrink-0 border border-slate-950 bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="sticky bottom-3 z-20 min-h-12 shrink-0 rounded-xl bg-[var(--arena-yellow)] px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg sm:shadow-none disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isPending ? "Generating..." : "Generate matches"}
             </button>
@@ -428,7 +431,7 @@ export function RoundRobinGroupsSection() {
       ) : null}
 
       {!editable ? (
-        <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
           Group assignment is locked because this Stage has already been generated.
         </div>
       ) : null}

@@ -108,12 +108,14 @@ export function StageProvider({
               )}`
         },
 
-        async configureStage() {
+        async configureStage(options) {
           await configureCompetitionStageAction(
             stage.id,
           )
 
-          router.refresh()
+          if (options?.refresh !== false) {
+            router.refresh()
+          }
         },
 
         async generateStage() {

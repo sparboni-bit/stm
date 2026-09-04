@@ -84,7 +84,7 @@ function phaseName(
     return stage.title
   }
 
-  return `Phase ${index + 1}`
+  return `Stage ${index + 1}`
 }
 
 function isCompleted(stage: CompetitionStage) {
@@ -155,7 +155,7 @@ function TournamentHome({
         </h2>
 
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-          Create the first phase to define how this tournament will be played.
+          Create the first stage to define how this tournament will be played.
         </p>
 
         <Link
@@ -177,7 +177,7 @@ function TournamentHome({
           </p>
 
           <h2 className="mt-0.5 text-lg font-semibold text-slate-950">
-            {stages.length === 1 ? "Format" : "Phases"}
+            {stages.length === 1 ? "Format" : "Stages"}
           </h2>
         </div>
 
@@ -211,7 +211,7 @@ function TournamentHome({
                 <div className="min-w-0">
                   {stages.length > 1 ? (
                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                      Phase {index + 1}
+                      Stage {index + 1}
                     </p>
                   ) : null}
 
@@ -260,7 +260,7 @@ function TournamentHome({
           +{" "}
           {stages.length -
             visiblePhases.length}{" "}
-          more phase
+          more stage
           {stages.length -
             visiblePhases.length ===
           1

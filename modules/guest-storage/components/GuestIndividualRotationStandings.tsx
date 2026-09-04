@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useMemo } from "react"
 
 import type { CompetitionEntry } from "@/modules/competition-entries/types"
@@ -55,7 +56,7 @@ export function GuestIndividualRotationStandings({
   ).length
 
   return (
-    <article className="overflow-hidden border border-neutral-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
       <header className="border-b border-neutral-200 bg-neutral-50 px-4 py-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
           Individual Rotation
@@ -68,13 +69,28 @@ export function GuestIndividualRotationStandings({
         </p>
       </header>
 
+      <div className="rounded-2xl bg-neutral-100 px-4 py-4">
+        <div className="flex items-start gap-3">
+          <Image
+            src="/brand/pickleball-arena-logo.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 object-contain"
+          />
+          <p className="text-sm leading-5 text-neutral-800">
+            <strong>Standings.</strong>{" "}The ranking updates automatically from completed matches. Use it to follow wins, points and score difference while the Stage progresses.
+          </p>
+        </div>
+      </div>
+
       {standings.length === 0 ? (
         <div className="px-4 py-8 text-center">
           <p className="font-semibold text-neutral-950">
             No standings yet
           </p>
           <p className="mt-2 text-sm text-neutral-600">
-            Generate this Individual Rotation phase to see the individual standings.
+            Generate this Individual Rotation stage to see the individual standings.
           </p>
         </div>
       ) : (

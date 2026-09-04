@@ -12,7 +12,6 @@ import type {
 import { addRosterEntryAction } from "../actions/addRosterEntry"
 import { addRosterEntriesBulkAction } from "../actions/addRosterEntriesBulk"
 import { addRosterPairsBulkAction } from "../actions/addRosterPairsBulk"
-import { deleteRosterAction } from "../actions/deleteRoster"
 import { removeRosterEntryAction } from "../actions/removeRosterEntry"
 import { removeRosterPairAction } from "../actions/removeRosterPair"
 import { renameRosterEntryAction } from "../actions/renameRosterEntry"
@@ -182,31 +181,12 @@ export function RosterEntriesManager({
     }
   }
 
-  function handleDeleteRoster() {
-    const confirmed = window.confirm(
-      `Delete roster "${roster.name}"? Players already imported into Events or Stages are not deleted.`,
-    )
 
-    if (!confirmed) return
-
-    setBusy(true)
-
-    deleteRosterAction(roster.id).catch(
-      (error) => {
-        setBusy(false)
-        window.alert(
-          error instanceof Error
-            ? error.message
-            : "Unable to delete roster.",
-        )
-      },
-    )
-  }
 
   if (section === "teams") {
     return (
       <>
-        <section className="mt-6 md:mt-0">
+        <section className="mt-6 rounded-[18px] border border-neutral-200 bg-white p-4 md:mt-0 sm:p-5">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
             Add teams
           </p>
@@ -225,7 +205,7 @@ export function RosterEntriesManager({
                 setBulkOpen((value) => !value)
                 setBulkText("")
               }}
-              className="min-h-11 w-full border border-slate-900 bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-50 disabled:opacity-50"
+              className="min-h-10 w-full border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50 disabled:opacity-50 sm:w-auto"
             >
               {bulkOpen
                 ? "Close Bulk Import"
@@ -278,7 +258,7 @@ export function RosterEntriesManager({
                     onClick={
                       handleTeamsBulkImport
                     }
-                    className="min-h-10 bg-yellow-200 px-4 py-2 text-sm font-bold text-slate-700 transition enabled:bg-yellow-400 enabled:text-slate-950 enabled:hover:bg-yellow-300 disabled:cursor-not-allowed"
+                    className="min-h-10 bg-[var(--arena-yellow)] px-4 text-sm font-semibold text-[var(--arena-black)] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Import{" "}
                     {
@@ -291,7 +271,7 @@ export function RosterEntriesManager({
           </div>
         </section>
 
-        <section className="mt-8">
+        <section className="mt-5">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
             Teams ({roster.pairs.length})
           </p>
@@ -301,7 +281,7 @@ export function RosterEntriesManager({
               No saved teams.
             </div>
           ) : (
-            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <div className="mt-3 divide-y divide-neutral-200 border-y border-neutral-200">
               {roster.pairs.map(
                 (pair, index) => {
                   const playerA =
@@ -323,7 +303,7 @@ export function RosterEntriesManager({
                   return (
                     <article
                       key={pair.id}
-                      className="border border-slate-200 bg-white p-4"
+                      className="py-3"
                     >
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
                         Team {index + 1}
@@ -352,7 +332,7 @@ export function RosterEntriesManager({
                             ),
                           )
                         }}
-                        className="mt-3 min-h-10 w-full border border-red-300 bg-white px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        className="mt-2 min-h-9 border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                       >
                         Remove team
                       </button>
@@ -364,23 +344,13 @@ export function RosterEntriesManager({
           )}
         </section>
 
-        <section className="mt-10 border-t border-slate-200 pt-5">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handleDeleteRoster}
-            className="text-sm font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
-          >
-            Delete roster
-          </button>
-        </section>
       </>
     )
   }
 
   return (
     <>
-      <section className="mt-6 md:mt-0">
+      <section className="mt-6 rounded-[18px] border border-neutral-200 bg-white p-4 md:mt-0 sm:p-5">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
           Add a player
         </p>
@@ -413,20 +383,20 @@ export function RosterEntriesManager({
             }
           }}
           id="add-roster-entry-form"
-          className="mt-3"
+          className="mt-3 flex flex-col gap-2 sm:flex-row"
         >
           <input
             name="displayName"
             required
             maxLength={160}
             placeholder="Participant name"
-            className="min-h-11 w-full border border-slate-300 bg-white px-4 py-3 text-base text-slate-950 outline-none transition focus:border-slate-900"
+            className="min-h-12 min-w-0 flex-1 border border-neutral-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-slate-950"
           />
 
           <button
             type="submit"
             disabled={busy}
-            className="mt-3 min-h-11 w-full bg-yellow-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-yellow-300 disabled:opacity-50 sm:w-60"
+            className="min-h-12 bg-[var(--arena-yellow)] px-5 py-3 text-sm font-semibold text-[var(--arena-black)] transition hover:brightness-95 disabled:opacity-50"
           >
             Add participant
           </button>
@@ -440,7 +410,7 @@ export function RosterEntriesManager({
               setBulkOpen((value) => !value)
               setBulkText("")
             }}
-            className="min-h-11 w-full border border-slate-900 bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-50 disabled:opacity-50"
+            className="min-h-10 w-full border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50 disabled:opacity-50 sm:w-auto"
           >
             {bulkOpen
               ? "Close Bulk Import"
@@ -486,7 +456,7 @@ export function RosterEntriesManager({
                   onClick={
                     handlePlayersBulkImport
                   }
-                  className="min-h-10 bg-yellow-200 px-4 py-2 text-sm font-bold text-slate-700 transition enabled:bg-yellow-400 enabled:text-slate-950 enabled:hover:bg-yellow-300 disabled:cursor-not-allowed"
+                  className="min-h-10 bg-[var(--arena-yellow)] px-4 text-sm font-semibold text-[var(--arena-black)] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Import{" "}
                   {singlesPreview.length}
@@ -497,7 +467,7 @@ export function RosterEntriesManager({
         </div>
       </section>
 
-      <section className="mt-8">
+      <section className="mt-5">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
           Players ({roster.entries.length})
         </p>
@@ -507,19 +477,19 @@ export function RosterEntriesManager({
             No saved players.
           </div>
         ) : (
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div className="mt-3 divide-y divide-neutral-200 border-y border-neutral-200">
             {roster.entries.map(
               (entry, index) => (
                 <article
                   key={entry.id}
-                  className="border border-slate-200 bg-white p-4"
+                  className="py-3"
                 >
                   <h3 className="text-base font-bold text-slate-950">
                     {index + 1}.{" "}
                     {entry.display_name}
                   </h3>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       type="button"
                       disabled={busy}
@@ -548,7 +518,7 @@ export function RosterEntriesManager({
                           ),
                         )
                       }}
-                      className="min-h-10 border border-slate-900 bg-white px-3 py-2 text-sm font-bold text-slate-950 hover:bg-slate-50 disabled:opacity-50"
+                      className="min-h-9 border border-neutral-300 bg-white px-3 text-xs font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-50"
                     >
                       Rename
                     </button>
@@ -572,7 +542,7 @@ export function RosterEntriesManager({
                           ),
                         )
                       }}
-                      className="min-h-10 border border-red-300 bg-white px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      className="min-h-9 border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                     >
                       Remove
                     </button>
@@ -584,16 +554,6 @@ export function RosterEntriesManager({
         )}
       </section>
 
-      <section className="mt-10 border-t border-slate-200 pt-5">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={handleDeleteRoster}
-          className="text-sm font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
-        >
-          Delete roster
-        </button>
-      </section>
     </>
   )
 }

@@ -103,7 +103,7 @@ export function CompetitionEntriesManager({
           Tournament roster ({entries.length})
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Add players or teams to this tournament. They can then be assigned to one or more phases.
+          Add players or teams to this tournament. They can then be assigned to one or more stages.
         </p>
       </div>
 

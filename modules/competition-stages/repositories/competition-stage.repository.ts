@@ -147,26 +147,6 @@ export async function deleteCompetitionStage(
 ): Promise<void> {
   const supabase = await createClient()
 
-  const { data: stage, error: readError } =
-    await supabase
-      .from("competition_stages")
-      .select("status")
-      .eq("id", stageId)
-      .single()
-
-  if (readError) {
-    throw new Error(readError.message)
-  }
-
-  if (
-    stage.status !== "draft" &&
-    stage.status !== "configured"
-  ) {
-    throw new Error(
-      "A generated or running stage cannot be deleted.",
-    )
-  }
-
   const { error } = await supabase
     .from("competition_stages")
     .delete()

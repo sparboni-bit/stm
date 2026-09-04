@@ -6,7 +6,7 @@ export const eliminationEngineManifest: StageEngineManifest = {
   description:
     "Knockout competition in which the winner of each match advances to the next round.",
   version: "0.1.0",
-  defaultSection: "overview",
+  defaultSection: "structure",
   capabilities: {
     supportsEntries: true,
     supportsGeneration: true,
@@ -18,12 +18,6 @@ export const eliminationEngineManifest: StageEngineManifest = {
   },
   workflow: [
     {
-      id: "overview",
-      label: "Overview",
-      description: "Stage information, lifecycle status and engine capabilities.",
-      milestone: "overview",
-    },
-    {
       id: "structure",
       label: "Structure",
       description: "Configure the elimination bracket before generation.",
@@ -31,8 +25,8 @@ export const eliminationEngineManifest: StageEngineManifest = {
     },
     {
       id: "entries",
-      label: "Entries",
-      description: "Review the competition entries assigned to this stage.",
+      label: "Players",
+      description: "Select the players taking part in this stage.",
       milestone: "entries",
     },
     {
@@ -46,18 +40,6 @@ export const eliminationEngineManifest: StageEngineManifest = {
       label: "Matches",
       description: "Manage generated matches, courts and results.",
       milestone: "play",
-    },
-    {
-      id: "order-of-play",
-      label: "Order of Play",
-      description: "View the tournament schedule by day, time and court.",
-      milestone: "play",
-    },
-    {
-      id: "reports",
-      label: "Reports",
-      description: "Print and export bracket and match information.",
-      milestone: "results",
     },
   ],
 }

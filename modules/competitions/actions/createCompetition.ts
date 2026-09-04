@@ -35,9 +35,23 @@ export async function createCompetitionAction(
       ? rawDescription
       : null
 
-  if (!title) {
+  const startDate = String(
+    formData.get("start_date") || "",
+  ).trim()
+
+  const endDate = String(
+    formData.get("end_date") || "",
+  ).trim()
+
+  if (!title || !startDate) {
     redirect(
       "/competitions/new?error=missing_fields",
+    )
+  }
+
+  if (endDate && endDate < startDate) {
+    redirect(
+      "/competitions/new?error=invalid_dates",
     )
   }
 
@@ -62,6 +76,10 @@ export async function createCompetitionAction(
       created_by: member.id,
       title,
       description,
+      start_at: `${startDate}T12:00:00.000Z`,
+      end_at: endDate
+        ? `${endDate}T12:00:00.000Z`
+        : null,
       settings: getDefaultSettings(),
       structure: {},
     })

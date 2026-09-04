@@ -254,10 +254,11 @@ export async function getGuestIndividualRotationTemplateAction(input: {
   if (
     input.seedCount !== 0 &&
     input.seedCount !== 2 &&
+    input.seedCount !== 3 &&
     input.seedCount !== 4
   ) {
     throw new Error(
-      "Individual Rotation templates support 0, 2 or 4 seeded players.",
+      "Individual Rotation templates support 0, 2, 3 or 4 Keep Apart players.",
     )
   }
 

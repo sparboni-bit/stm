@@ -38,6 +38,8 @@ export type Competition = {
   status: CompetitionStatus
   start_at: string | null
   end_at: string | null
+  is_closed: boolean
+  closed_at: string | null
   settings: Record<string, unknown>
   structure: Record<string, unknown>
   metadata: Record<string, unknown>

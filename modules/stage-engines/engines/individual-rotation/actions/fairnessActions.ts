@@ -425,9 +425,14 @@ export async function getIndividualRotationFairnessPreviewAction(
         player.seed > 0,
     ).length
 
-  if (seedCount !== 0 && seedCount !== 2) {
+  if (
+    seedCount !== 0 &&
+    seedCount !== 2 &&
+    seedCount !== 3 &&
+    seedCount !== 4
+  ) {
     throw new Error(
-      "Individual Rotation templates support either 0 or 2 seeded players. Update the Stage seeds before Fairness Preview.",
+      "Individual Rotation templates support 0, 2, 3 or 4 Keep Apart players. Update the Stage Keep Apart selection before Fairness Preview.",
     )
   }
 
@@ -443,7 +448,7 @@ export async function getIndividualRotationFairnessPreviewAction(
 
   if (!template) {
     throw new Error(
-      `No precomputed Individual Rotation template is available for ${players.length} players, ${usableCourtCount} usable court(s), ${seedCount} seed(s), and ${requestedRounds} round(s).`,
+      `No precomputed Individual Rotation template is available for ${players.length} players, ${usableCourtCount} usable court(s), ${seedCount} Keep Apart player(s), and ${requestedRounds} round(s).`,
     )
   }
 

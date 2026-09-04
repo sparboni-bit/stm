@@ -162,20 +162,30 @@ export function IndividualRotationPlannerSection() {
   const [error, setError] =
     useState("")
 
+  const [hydrated, setHydrated] =
+    useState(false)
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
   useEffect(() => {
     let cancelled = false
 
-    setLoadingSummary(true)
+    async function loadSummary() {
+      setLoadingSummary(true)
 
-    getIndividualRotationPlannerSummaryAction(
-      stage.id,
-    )
-      .then((result) => {
+      try {
+        const result =
+          await getIndividualRotationPlannerSummaryAction(
+            stage.id,
+          )
+
         if (!cancelled) {
           setSummary(result)
+          setError("")
         }
-      })
-      .catch((caughtError) => {
+      } catch (caughtError) {
         if (!cancelled) {
           setError(
             caughtError instanceof Error
@@ -183,15 +193,30 @@ export function IndividualRotationPlannerSection() {
               : "Unable to load Individual Rotation information.",
           )
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setLoadingSummary(false)
         }
-      })
+      }
+    }
+
+    void loadSummary()
+
+    function handleStageEntriesChanged() {
+      void loadSummary()
+    }
+
+    window.addEventListener(
+      "stage-entries-changed",
+      handleStageEntriesChanged,
+    )
 
     return () => {
       cancelled = true
+      window.removeEventListener(
+        "stage-entries-changed",
+        handleStageEntriesChanged,
+      )
     }
   }, [stage.id])
 
@@ -320,9 +345,16 @@ export function IndividualRotationPlannerSection() {
     requestedRounds,
   ])
 
-  const editable =
+  const stageEditable =
     stage.status === "draft" ||
     stage.status === "configured"
+
+  /*
+   * Keep the SSR output and the first client render identical.
+   * The real Stage lock is applied immediately after hydration.
+   */
+  const editable =
+    hydrated ? stageEditable : true
 
   const supportedPlayerCount =
     summary.playerCount >= 4 &&
@@ -332,6 +364,7 @@ export function IndividualRotationPlannerSection() {
   const supportedSeedCount =
     summary.seedCount === 0 ||
     summary.seedCount === 2 ||
+    summary.seedCount === 3 ||
     summary.seedCount === 4
 
   const validCourtCount =
@@ -432,7 +465,7 @@ export function IndividualRotationPlannerSection() {
        * point provided by StageProvider.
        */
       if (stage.status === "draft") {
-        await configureStage()
+        await configureStage({ refresh: false })
       }
 
       await generateStage()
@@ -452,84 +485,37 @@ export function IndividualRotationPlannerSection() {
   }
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-4">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
           Individual Rotation
         </p>
 
-        <h2 className="mt-1 text-xl font-semibold text-slate-950">
-          Stage Setup
-        </h2>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <h2 className="text-2xl font-black tracking-tight text-slate-950">
+            Stage Setup
+          </h2>
 
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Individual Rotation supports 4 to 20
-          players. Matches are selected from a
-          precomputed rotation library according
-          to the number of players, usable courts,
-          seeded players and rounds. The rotation
-          balances playing time and sit-outs while
-          varying partners and opponents as much
-          as possible. Seeds can be set to 0, 2 or
-          4 and are kept apart where possible.
-        </p>
+          {!editable ? (
+            <span className="inline-flex min-h-6 items-center bg-slate-100 px-2 text-[10px] font-black uppercase tracking-wide text-slate-600">
+              Locked
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="border border-slate-200 bg-slate-50 p-3 sm:p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Players
-          </p>
-
-          <p className="mt-2 text-xl font-semibold text-slate-950">
-            {loadingSummary
-              ? "—"
-              : summary.playerCount}
-          </p>
-        </div>
-
-        <div className="border border-slate-200 bg-slate-50 p-3 sm:p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Seeds
-          </p>
-
-          <p className="mt-2 text-xl font-semibold text-slate-950">
-            {loadingSummary
-              ? "—"
-              : summary.seedCount}
-          </p>
-        </div>
-
-        <div className="border border-slate-200 bg-slate-50 p-3 sm:p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Courts used
-          </p>
-
-          <p className="mt-2 text-xl font-semibold text-slate-950">
-            {supportedPlayerCount &&
-            parsed.courtsUsed >= 1
-              ? parsed.courtsUsed
-              : "—"}
-          </p>
-        </div>
-
-        <div className="border border-slate-200 bg-slate-50 p-3 sm:p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Rest / round
-          </p>
-
-          <p className="mt-2 text-xl font-semibold text-slate-950">
-            {supportedPlayerCount &&
-            parsed.courtsUsed >= 1
-              ? parsed.restingPlayersPerRound
-              : "—"}
-          </p>
-        </div>
+      <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+        <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-500">
+          Players
+        </span>
+        <span className="text-sm font-black text-neutral-950">
+          {loadingSummary ? "—" : `${summary.playerCount} selected`}
+        </span>
       </div>
 
       {!loadingSummary &&
       !supportedPlayerCount ? (
-        <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Individual Rotation requires between
           4 and 20 players.
         </div>
@@ -537,329 +523,345 @@ export function IndividualRotationPlannerSection() {
 
       {!loadingSummary &&
       !supportedSeedCount ? (
-        <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Individual Rotation supports 0, 2 or
-          4 seeded players.
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Individual Rotation supports 0, 2, 3 or
+          4 Keep Apart players.
         </div>
       ) : null}
 
-      <div className="border border-slate-200 bg-white p-4">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Courts
-            </span>
-
-            <input
-              type="text"
-              inputMode="numeric"
-              value={courtCount}
-              onChange={(event) =>
-                setCourtCount(
-                  event.target.value,
-                )
-              }
-              disabled={
-                !editable || pending
-              }
-              className="mt-1 h-11 w-full border border-slate-300 px-3 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
-            />
-
-            <span className="mt-1 block text-xs leading-5 text-slate-500">
-              Up to{" "}
-              {Math.max(
-                1,
-                parsed.maxUsableCourts,
-              )}{" "}
-              usable with the selected players.
-            </span>
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Available time
-            </span>
-
-            <div className="relative mt-1">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={availableMinutes}
-                onChange={(event) =>
-                  setAvailableMinutes(
-                    event.target.value,
-                  )
-                }
-                disabled={
-                  !editable || pending
-                }
-                className="h-11 w-full border border-slate-300 px-3 pr-12 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
-              />
-
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">
-                min
-              </span>
-            </div>
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Match duration
-            </span>
-
-            <div className="relative mt-1">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={
-                  matchDurationMinutes
-                }
-                onChange={(event) =>
-                  setMatchDurationMinutes(
-                    event.target.value,
-                  )
-                }
-                disabled={
-                  !editable || pending
-                }
-                className="h-11 w-full border border-slate-300 px-3 pr-12 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
-              />
-
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">
-                min
-              </span>
-            </div>
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Rotation
-            </span>
-
-            <div className="relative mt-1">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={rotationMinutes}
-                onChange={(event) =>
-                  setRotationMinutes(
-                    event.target.value,
-                  )
-                }
-                disabled={
-                  !editable || pending
-                }
-                className="h-11 w-full border border-slate-300 px-3 pr-12 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
-              />
-
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">
-                min
-              </span>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <div className="border border-slate-200 bg-slate-50 p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {!editable ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Recommended
+            <p className="text-sm font-black text-slate-950">
+              Stage generated
+            </p>
+            <p className="text-xs text-slate-500">
+              Setup and players are locked. Continue from Matches.
             </p>
 
-            <p className="mt-1 text-xl font-semibold text-slate-950">
-              {validTime
-                ? `${parsed.recommendedRounds} round${
-                    parsed.recommendedRounds ===
-                    1
-                      ? ""
-                      : "s"
-                  }`
-                : "—"}
-            </p>
-
-            <p className="mt-1 text-sm leading-5 text-slate-500">
-              Based on{" "}
-              {parsed.roundDurationMinutes >
-              0
-                ? `${parsed.roundDurationMinutes} minutes per round`
-                : "the current timing"}
-              . You may choose fewer or more
-              rounds.
+            <p className="mt-1.5 text-xs font-semibold text-slate-700">
+              {parsed.courtsUsed} court{parsed.courtsUsed === 1 ? "" : "s"}
+              {" · "}
+              {parsed.available} min available
+              {" · "}
+              {parsed.matchDuration} min matches
+              {" · "}
+              {parsed.rotation} min rotation
+              {" · "}
+              {parsed.requested ?? "—"} rounds
+              {" · "}
+              {parsed.matchCount} matches
             </p>
           </div>
 
           <button
             type="button"
-            onClick={
-              useRecommendedRounds
+            onClick={() =>
+              router.push(
+                getSectionHref("play"),
+              )
             }
-            disabled={
-              !editable ||
-              pending ||
-              !validTime
-            }
-            className="h-10 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-9 rounded-xl bg-slate-950 px-3 text-xs font-black uppercase tracking-wide text-white"
           >
-            Use recommended
+            Open Matches
           </button>
         </div>
-      </div>
+      ) : null}
 
-      <div className="border border-slate-300 bg-white p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Rounds to generate
-            </p>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Choose from 1 to 20 rounds.
-            </p>
-          </div>
-
-          <div className="flex items-center">
-            <button
-              type="button"
-              onClick={decreaseRounds}
-              disabled={
-                !editable ||
-                pending ||
-                parsed.requested === 1
-              }
-              aria-label="Decrease rounds"
-              className="flex h-11 w-11 items-center justify-center border border-slate-300 bg-white text-xl font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              −
-            </button>
-
-            <input
-              type="text"
-              inputMode="numeric"
-              value={requestedRounds}
-              onChange={(event) =>
-                setRequestedRounds(
-                  event.target.value,
-                )
-              }
-              disabled={
-                !editable || pending
-              }
-              aria-label="Rounds to generate"
-              className="h-11 w-16 border-y border-slate-300 text-center text-lg font-bold text-slate-950 disabled:bg-slate-50"
-            />
-
-            <button
-              type="button"
-              onClick={increaseRounds}
-              disabled={
-                !editable ||
-                pending ||
-                parsed.requested ===
-                  TEMPLATE_MAX_ROUNDS
-              }
-              aria-label="Increase rounds"
-              className="flex h-11 w-11 items-center justify-center border border-slate-300 bg-white text-xl font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              +
-            </button>
+      {editable ? (
+        <>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Courts
+              </span>
+  
+              <input
+                type="text"
+                inputMode="numeric"
+                value={courtCount}
+                onChange={(event) =>
+                  setCourtCount(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  !editable || pending
+                }
+                className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
+              />
+            </label>
+  
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Available time
+              </span>
+  
+              <div className="relative mt-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={availableMinutes}
+                  onChange={(event) =>
+                    setAvailableMinutes(
+                      event.target.value,
+                    )
+                  }
+                  disabled={
+                    !editable || pending
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-300 px-3 pr-12 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
+                />
+  
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">
+                  min
+                </span>
+              </div>
+            </label>
+  
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Match duration
+              </span>
+  
+              <div className="relative mt-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={
+                    matchDurationMinutes
+                  }
+                  onChange={(event) =>
+                    setMatchDurationMinutes(
+                      event.target.value,
+                    )
+                  }
+                  disabled={
+                    !editable || pending
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-300 px-3 pr-12 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
+                />
+  
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">
+                  min
+                </span>
+              </div>
+            </label>
+  
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Rotation
+              </span>
+  
+              <div className="relative mt-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={rotationMinutes}
+                  onChange={(event) =>
+                    setRotationMinutes(
+                      event.target.value,
+                    )
+                  }
+                  disabled={
+                    !editable || pending
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-300 px-3 pr-12 text-sm font-semibold text-slate-900 disabled:bg-slate-50"
+                />
+  
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">
+                  min
+                </span>
+              </div>
+            </label>
           </div>
         </div>
-
-        {validRequestedRounds &&
-        parsed.courtsUsed >= 1 ? (
-          <div className="mt-4 border-t border-slate-200 pt-4">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Matches
-                </p>
-
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {parsed.matchCount}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Courts
-                </p>
-
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {parsed.courtsUsed}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Estimated time
-                </p>
-
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {parsed.requested! *
-                    parsed.roundDurationMinutes}{" "}
-                  min
-                </p>
-              </div>
+  
+        <div className="rounded-2xl border border-neutral-950 bg-yellow-100 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Recommended
+              </p>
+  
+              <p className="mt-1 text-base font-black text-slate-950">
+                {validTime
+                  ? `${parsed.recommendedRounds} round${
+                      parsed.recommendedRounds ===
+                      1
+                        ? ""
+                        : "s"
+                    }`
+                  : "—"}
+  
+                {parsed.roundDurationMinutes > 0 ? (
+                  <span className="font-medium text-slate-500">
+                    {" "}· {parsed.roundDurationMinutes} min / round
+                  </span>
+                ) : null}
+              </p>
+            </div>
+  
+            <button
+              type="button"
+              onClick={
+                useRecommendedRounds
+              }
+              disabled={
+                !editable ||
+                pending ||
+                !validTime
+              }
+              className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Use recommended
+            </button>
+          </div>
+  
+          <div className="mt-3 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Rounds to generate
+              </p>
+  
+              <p className="mt-1 text-xs text-slate-500">
+                Choose from 1 to 20 rounds.
+              </p>
+            </div>
+  
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={decreaseRounds}
+                disabled={
+                  !editable ||
+                  pending ||
+                  parsed.requested === 1
+                }
+                aria-label="Decrease rounds"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-xl font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                −
+              </button>
+  
+              <input
+                type="text"
+                inputMode="numeric"
+                value={requestedRounds}
+                onChange={(event) =>
+                  setRequestedRounds(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  !editable || pending
+                }
+                aria-label="Rounds to generate"
+                className="mx-2 h-10 w-14 rounded-xl border border-slate-300 text-center text-lg font-bold text-slate-950 disabled:bg-slate-50"
+              />
+  
+              <button
+                type="button"
+                onClick={increaseRounds}
+                disabled={
+                  !editable ||
+                  pending ||
+                  parsed.requested ===
+                    TEMPLATE_MAX_ROUNDS
+                }
+                aria-label="Increase rounds"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-xl font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                +
+              </button>
             </div>
           </div>
+  
+          {validRequestedRounds &&
+          parsed.courtsUsed >= 1 ? (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-200 pt-3 text-xs">
+              <span className="font-black text-slate-950">
+                {parsed.matchCount} matches
+              </span>
+  
+              <span className="text-slate-500">
+                {parsed.courtsUsed} court
+                {parsed.courtsUsed === 1 ? "" : "s"}
+              </span>
+  
+              <span className="text-slate-500">
+                {parsed.requested! *
+                  parsed.roundDurationMinutes}{" "}
+                min estimated
+              </span>
+            </div>
+          ) : null}
+        </div>
+        </>
+      ) : null}
+
+      {editable ? (
+        <>
+        {parsed.courts >
+        TEMPLATE_MAX_COURTS ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Individual Rotation supports up to
+            5 courts.
+          </div>
         ) : null}
-      </div>
+  
+        {parsed.courts >= 1 &&
+        parsed.maxUsableCourts >= 1 &&
+        parsed.courts >
+          parsed.maxUsableCourts ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            With {summary.playerCount} players,{" "}
+            {parsed.maxUsableCourts} court
+            {parsed.maxUsableCourts === 1
+              ? ""
+              : "s"}{" "}
+            can be used simultaneously. Extra
+            courts will remain unused.
+          </div>
+        ) : null}
+  
+        {parsed.requested !== null &&
+        !validRequestedRounds ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Choose between 1 and 20 rounds.
+          </div>
+        ) : null}
 
-      {parsed.courts >
-      TEMPLATE_MAX_COURTS ? (
-        <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Individual Rotation supports up to
-          5 courts.
-        </div>
-      ) : null}
-
-      {parsed.courts >= 1 &&
-      parsed.maxUsableCourts >= 1 &&
-      parsed.courts >
-        parsed.maxUsableCourts ? (
-        <div className="border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          With {summary.playerCount} players,{" "}
-          {parsed.maxUsableCourts} court
-          {parsed.maxUsableCourts === 1
-            ? ""
-            : "s"}{" "}
-          can be used simultaneously. Extra
-          courts will remain unused.
-        </div>
-      ) : null}
-
-      {parsed.requested !== null &&
-      !validRequestedRounds ? (
-        <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Choose between 1 and 20 rounds.
-        </div>
+        {validRequestedRounds &&
+        parsed.requested !== null &&
+        parsed.requested > parsed.recommendedRounds ? (
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+            {parsed.requested} rounds exceed the current recommendation of {parsed.recommendedRounds}. You can generate them anyway.
+          </div>
+        ) : null}
+        </>
       ) : null}
 
       {error ? (
-        <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </div>
       ) : null}
 
-      <div className="flex justify-end border-t border-slate-200 pt-4">
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-          className="h-11 w-full bg-slate-950 px-5 text-sm font-bold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
-        >
-          {pending
-            ? "Generating..."
-            : "Generate Matches"}
-        </button>
-      </div>
-
-      {!editable ? (
-        <p className="text-sm text-slate-500">
-          Stage Setup is locked after match
-          generation.
-        </p>
+      {editable ? (
+        <div className="sticky bottom-0 z-20 -mx-4 flex justify-end border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-0 sm:backdrop-blur-none">
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            className="min-h-12 w-full rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+          >
+            {pending
+              ? "Generating..."
+              : "Generate Matches"}
+          </button>
+        </div>
       ) : null}
     </section>
   )

@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { FormEvent, useEffect, useMemo, useState } from "react"
 
 import type { CompetitionCourt } from "@/modules/competition-courts/types"
@@ -13,11 +14,8 @@ import {
   saveGuestSingleSetResult,
   undoGuestMatchResult,
 } from "@/modules/guest-storage/services/guestMatch.service"
-import {
-  prepareWebTimerAlarm,
-  startWebTimerAlarm,
-  stopWebTimerAlarm,
-} from "@/modules/stage-timer/alarm/webTimerAlarm"
+import { useStageTimer } from "@/modules/stage-timer/hooks/useStageTimer"
+import { addGuestIndividualRotationRound } from "@/modules/guest-storage/services/guestStageGeneration.service"
 
 export type ScoreFormat = "single_set" | "best_of_3"
 
@@ -143,31 +141,12 @@ export function GuestMatchesManager({
       ? activeStage
       : null
   const matchDurationMinutes = Math.max(1, Number(timerStage?.settings.matchDurationMinutes ?? 10))
-  const [remainingSeconds, setRemainingSeconds] = useState(matchDurationMinutes * 60)
-  const [timerRunning, setTimerRunning] = useState(false)
-  const [timerOpen, setTimerOpen] = useState(false)
+  const timer = useStageTimer(matchDurationMinutes)
   const [scoreFormat, setScoreFormat] = useState<ScoreFormat>("single_set")
   const [openRounds, setOpenRounds] = useState<Set<string>>(() => new Set())
-
-  useEffect(() => {
-    if (!timerRunning) return
-    const id = window.setInterval(() => {
-      setRemainingSeconds((value) => {
-        if (value <= 1) {
-          window.clearInterval(id)
-          setTimerRunning(false)
-          void startWebTimerAlarm()
-          return 0
-        }
-        return value - 1
-      })
-    }, 1000)
-    return () => window.clearInterval(id)
-  }, [timerRunning])
-
-  useEffect(() => {
-    return () => stopWebTimerAlarm()
-  }, [])
+  const [addRoundWorking, setAddRoundWorking] = useState(false)
+  const [addRoundMessage, setAddRoundMessage] = useState<string | null>(null)
+  const [addRoundError, setAddRoundError] = useState<string | null>(null)
 
   const grouped = useMemo(() => {
     const result = new Map<string, MatchRow[]>()
@@ -195,21 +174,45 @@ export function GuestMatchesManager({
 
   useEffect(() => {
     setOpenRounds((current) => {
-      if (current.size === 0) return current
-      return new Set([...current].filter((key) => grouped.has(key)))
+      const valid = new Set([...current].filter((key) => grouped.has(key)))
+      if (valid.size > 0) return valid
+      const firstIncomplete = [...grouped.entries()].find(([, rows]) => rows.some((row) => row.status !== "completed"))?.[0]
+        ?? [...grouped.keys()][0]
+      return firstIncomplete ? new Set([firstIncomplete]) : new Set<string>()
     })
   }, [grouped])
 
   function toggleRound(key: string) {
     setOpenRounds((current) => {
-      if (isRoundRobin) {
-        return current.has(key) ? new Set<string>() : new Set([key])
-      }
-      const next = new Set(current)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
+      return current.has(key) ? new Set<string>() : new Set([key])
     })
+  }
+
+  async function handleAddRound() {
+    if (!activeStage || activeStage.stageType !== "individual_rotation" || addRoundWorking) return
+
+    setAddRoundWorking(true)
+    setAddRoundMessage(null)
+    setAddRoundError(null)
+
+    try {
+      const result = await addGuestIndividualRotationRound({
+        competitionId,
+        stageId: activeStage.id,
+      })
+      setAddRoundMessage(
+        `Round ${result.roundNumber} added · ${result.matchCount} ${
+          result.matchCount === 1 ? "match" : "matches"
+        }`,
+      )
+      await onChanged()
+    } catch (cause) {
+      setAddRoundError(
+        cause instanceof Error ? cause.message : "Unable to add another round.",
+      )
+    } finally {
+      setAddRoundWorking(false)
+    }
   }
 
   if (matches.length === 0) {
@@ -222,15 +225,70 @@ export function GuestMatchesManager({
     )
   }
 
-  const timerLabel = `${String(Math.floor(remainingSeconds / 60)).padStart(2, "0")}:${String(remainingSeconds % 60).padStart(2, "0")}`
-  const totalTimerSeconds = matchDurationMinutes * 60
-  const timerProgress = Math.max(0, Math.min(1, remainingSeconds / totalTimerSeconds))
-  const timerRadius = 74
-  const timerCircumference = 2 * Math.PI * timerRadius
-  const timerDashOffset = timerCircumference * (1 - timerProgress)
+
 
   return (
-    <section className="border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
+    <>
+    {activeStage?.stageType === "individual_rotation" ? (
+      <>
+      <div className="rounded-2xl bg-neutral-100 px-4 py-4">
+        <div className="flex items-start gap-3">
+          <Image
+            src="/brand/pickleball-arena-logo.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 object-contain"
+          />
+          <p className="text-sm leading-5 text-neutral-800">
+            <strong>Matches.</strong>{" "}Open a round, enter results directly in each match and use the timer if needed. Add another round only when you want to extend the generated rotation.
+          </p>
+        </div>
+      </div>
+
+      <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Continue play
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">
+              Add another round
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+              Create one additional round using the current match history
+              to preserve the best available player rotation and fairness.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleAddRound()}
+            disabled={
+              addRoundWorking ||
+              (activeStage.status !== "generated" && activeStage.status !== "running")
+            }
+            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+          >
+            {addRoundWorking ? "Adding round..." : "Add Round"}
+          </button>
+        </div>
+
+        {addRoundMessage ? (
+          <div role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+            {addRoundMessage}
+          </div>
+        ) : null}
+
+        {addRoundError ? (
+          <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {addRoundError}
+          </div>
+        ) : null}
+      </section>
+      </>
+    ) : null}
+
+    <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Play</p>
@@ -274,53 +332,16 @@ export function GuestMatchesManager({
       </div>
 
       {timerStage ? (
-        <div className="mt-5 overflow-hidden rounded-[18px] border border-neutral-200 bg-white">
-          <button
-            type="button"
-            onClick={() => setTimerOpen((value) => !value)}
-            aria-expanded={timerOpen}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <span className={[
-                "h-2.5 w-2.5 shrink-0 rounded-full",
-                timerRunning ? "bg-red-500" : "bg-neutral-300",
-              ].join(" ")} />
-              <span className="min-w-0">
-                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-red-500">Timer</span>
-                <span className="mt-0.5 block text-xs text-neutral-500">
-                  Match time · {matchDurationMinutes} min · {timerRunning ? "RUNNING" : remainingSeconds === 0 ? "ENDED" : "READY"}
-                </span>
-              </span>
-            </span>
-            <span className="flex shrink-0 items-center gap-3">
-              <span className="font-mono text-xl font-black tracking-tight text-neutral-950">{timerLabel}</span>
-              <span className="grid h-8 w-8 place-items-center rounded-full border border-neutral-300 bg-white text-sm font-black text-neutral-800">
-                {timerOpen ? "−" : "+"}
-              </span>
-            </span>
-          </button>
-
-          {timerOpen ? (
-            <div className="border-t border-neutral-200 p-4">
-              <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center">
-                <div className="relative grid h-40 w-40 shrink-0 place-items-center sm:h-44 sm:w-44">
-                  <svg viewBox="0 0 168 168" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
-                    <circle cx="84" cy="84" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="10" className="text-neutral-200" />
-                    <circle cx="84" cy="84" r={timerRadius} fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeDasharray={timerCircumference} strokeDashoffset={timerDashOffset} className="text-neutral-950 transition-[stroke-dashoffset] duration-1000 ease-linear" />
-                  </svg>
-                  <div className="relative z-10 font-mono text-4xl font-black tracking-tight text-neutral-950 sm:text-5xl">{timerLabel}</div>
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <button type="button" onClick={() => setRemainingSeconds((value) => Math.max(0, value - 60))} className="grid h-11 min-w-11 place-items-center rounded-full border border-neutral-200 px-3 text-xs font-black">−1</button>
-                  <button type="button" onClick={() => { stopWebTimerAlarm(); setTimerRunning(false); setRemainingSeconds(matchDurationMinutes * 60) }} aria-label="Reset timer" title="Reset timer" className="grid h-11 w-11 place-items-center rounded-full border border-neutral-200 text-lg font-bold">↶</button>
-                  <button type="button" onClick={() => { if (timerRunning) { setTimerRunning(false); return }; stopWebTimerAlarm(); void prepareWebTimerAlarm(); setTimerRunning(true) }} aria-label={timerRunning ? "Pause timer" : "Start timer"} title={timerRunning ? "Pause timer" : "Start timer"} className="grid h-14 w-14 place-items-center rounded-full border border-neutral-950 bg-[var(--arena-yellow)] text-lg font-black text-neutral-950">{timerRunning ? "Ⅱ" : "▶"}</button>
-                  <button type="button" onClick={() => { setTimerRunning(false); setRemainingSeconds(0); void startWebTimerAlarm() }} aria-label="End timer" title="End timer" className="grid h-11 w-11 place-items-center rounded-full border border-neutral-950 text-base font-black">■</button>
-                  <button type="button" onClick={() => setRemainingSeconds((value) => value + 60)} className="grid h-11 min-w-11 place-items-center rounded-full border border-neutral-200 px-3 text-xs font-black">+1</button>
-                </div>
-              </div>
-            </div>
-          ) : null}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-y border-neutral-200 bg-neutral-50 px-3 py-2.5">
+          <span className={["h-2.5 w-2.5 rounded-full", timer.running ? "bg-red-500" : "bg-neutral-300"].join(" ")} />
+          <span className="text-[10px] font-black uppercase tracking-[0.14em] text-red-500">Timer</span>
+          <span className="text-xs font-semibold text-neutral-500">{matchDurationMinutes} min · {timer.running ? "RUNNING" : timer.remainingSeconds === 0 ? "ENDED" : "READY"}</span>
+          <span className="ml-auto font-mono text-2xl font-black tracking-tight text-neutral-950">{timer.label}</span>
+          <button type="button" onClick={() => timer.adjust(-60)} className="h-9 min-w-9 rounded-lg border border-neutral-300 bg-white px-2 text-xs font-black">−1</button>
+          <button type="button" onClick={timer.reset} aria-label="Reset timer" className="h-9 w-9 rounded-lg border border-neutral-300 bg-white font-bold">↶</button>
+          <button type="button" onClick={timer.running ? timer.pause : timer.start} className="h-10 min-w-12 rounded-lg border border-neutral-950 bg-[var(--arena-yellow)] px-3 font-black">{timer.running ? "Ⅱ" : "▶"}</button>
+          <button type="button" onClick={timer.end} aria-label="End timer" className="h-9 w-9 rounded-lg border border-neutral-950 bg-white font-black">■</button>
+          <button type="button" onClick={() => timer.adjust(60)} className="h-9 min-w-9 rounded-lg border border-neutral-300 bg-white px-2 text-xs font-black">+1</button>
         </div>
       ) : null}
 
@@ -372,6 +393,7 @@ export function GuestMatchesManager({
         })}
       </div>
     </section>
+    </>
   )
 }
 
@@ -412,6 +434,7 @@ export function InlineMatchEditor({
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     setSingleA(typeof match.score.scoreA === "number" ? String(match.score.scoreA) : "")
@@ -510,98 +533,51 @@ export function InlineMatchEditor({
   }
 
   if (match.is_bye) {
-    return (
-      <div className="grid gap-2 p-4 sm:grid-cols-[5rem_1fr_auto] sm:items-center">
-        <span className="text-xs font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span>
-        <span className="font-bold text-neutral-700">{a} · BYE</span>
-        <span className="rounded-md border border-neutral-300 bg-neutral-50 px-2 py-1 text-[10px] font-black">BYE</span>
-      </div>
-    )
+    return <div className="bg-white px-3 py-3 text-sm"><span className="font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span><span className="ml-3 font-bold text-neutral-800">{a}</span><span className="ml-2 text-xs font-black text-neutral-500">BYE</span></div>
   }
 
   if (match.status === "completed") {
-    const completedSets =
-      match.score.format === "best_of_3" && Array.isArray(match.score.sets)
-        ? match.score.sets.slice(0, 3).map((raw) => {
-            const row = raw as Record<string, unknown>
-            return {
-              a: typeof row.a === "number" ? String(row.a) : "",
-              b: typeof row.b === "number" ? String(row.b) : "",
-            }
-          })
-        : []
-
-    const completedSingleA =
-      typeof match.score.scoreA === "number" ? String(match.score.scoreA) : ""
-    const completedSingleB =
-      typeof match.score.scoreB === "number" ? String(match.score.scoreB) : ""
-
     return (
-      <div className="bg-neutral-100 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <div className="text-xs font-black uppercase tracking-wide text-neutral-500">
-              Match #{match.visible_match_number ?? match.match_number}
-            </div>
-            {match.court_label ? <div className="mt-0.5 text-xs text-neutral-500">{match.court_label}</div> : null}
-          </div>
-          <span className={["rounded-full border px-2.5 py-1 text-[10px] font-black", statusClasses(match.status)].join(" ")}>
-            {statusLabel(match.status)}
+      <div className="bg-white">
+        <button type="button" onClick={() => setExpanded((value) => !value)} className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3 text-left">
+          <span className="text-xs font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-neutral-800">{a}</span>
+            <span className="block truncate text-sm font-medium text-neutral-800">{b}</span>
           </span>
-        </div>
-
-        <div className="mt-3 space-y-2">
-          <div className={match.score.format === "best_of_3" ? "grid grid-cols-[auto_minmax(0,1fr)_repeat(3,2.75rem)] items-center gap-2" : "grid grid-cols-[auto_minmax(0,1fr)_3.5rem] items-center gap-2"}>
-            <span className="w-4" />
-            <div className={["max-w-[10.5rem] whitespace-normal break-words text-[13px] leading-[1.15] font-normal sm:max-w-none sm:text-sm sm:leading-5", winner === "A" ? "text-emerald-700" : winner === "B" ? "text-red-600" : "text-neutral-950"].join(" ")}>{a}</div>
-            {match.score.format === "best_of_3" ? (
-              [0, 1, 2].map((index) => (
-                <div key={`ca-${index}`} className="grid h-11 place-items-center rounded-lg border border-neutral-300 bg-white px-1 text-center font-mono font-bold text-neutral-900">
-                  {completedSets[index]?.a ?? ""}
-                </div>
-              ))
-            ) : (
-              <div className="grid h-11 place-items-center rounded-lg border border-neutral-300 bg-white px-1 text-center font-mono font-bold text-neutral-900">{completedSingleA}</div>
-            )}
-          </div>
-
-          <div className="text-center text-[10px] font-black uppercase tracking-wide text-neutral-500">VS</div>
-
-          <div className={match.score.format === "best_of_3" ? "grid grid-cols-[auto_minmax(0,1fr)_repeat(3,2.75rem)] items-center gap-2" : "grid grid-cols-[auto_minmax(0,1fr)_3.5rem] items-center gap-2"}>
-            <span className="w-4" />
-            <div className={["max-w-[10.5rem] whitespace-normal break-words text-[13px] leading-[1.15] font-normal sm:max-w-none sm:text-sm sm:leading-5", winner === "B" ? "text-emerald-700" : winner === "A" ? "text-red-600" : "text-neutral-950"].join(" ")}>{b}</div>
-            {match.score.format === "best_of_3" ? (
-              [0, 1, 2].map((index) => (
-                <div key={`cb-${index}`} className="grid h-11 place-items-center rounded-lg border border-neutral-300 bg-white px-1 text-center font-mono font-bold text-neutral-900">
-                  {completedSets[index]?.b ?? ""}
-                </div>
-              ))
-            ) : (
-              <div className="grid h-11 place-items-center rounded-lg border border-neutral-300 bg-white px-1 text-center font-mono font-bold text-neutral-900">{completedSingleB}</div>
-            )}
-          </div>
-        </div>
-
-        {match.finish_type === "retirement" ? (
-          <div className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700">Retirement</div>
-        ) : null}
-
-        <button
-          type="button"
-          disabled={working}
-          onClick={() => void run(() => undoGuestMatchResult({ competitionId, matchId: match.id }), "Result removed.")}
-          className="mt-4 min-h-11 w-full rounded-lg border border-amber-400 bg-amber-50 px-4 text-sm font-bold text-amber-700 disabled:opacity-50"
-        >
-          {working ? "Working..." : "Undo result"}
+          <span className="font-mono text-sm font-black text-neutral-950">{scoreLabel(match)}</span>
+          <span className="text-lg font-black text-neutral-400">{expanded ? "−" : "+"}</span>
         </button>
-        {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
-        {message ? <p className="mt-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
+        {expanded ? (
+          <div className="border-t border-neutral-200 bg-neutral-50 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-black text-neutral-400">Match #{match.visible_match_number ?? match.match_number}{match.court_label ? ` · ${match.court_label}` : ""}</span>
+              <span className={["rounded-md border px-2 py-1 text-[9px] font-black", statusClasses(match.status)].join(" ")}>{statusLabel(match.status)}</span>
+            </div>
+            <div className="mt-3 grid gap-2 text-sm">
+              <div className="flex items-center justify-between gap-3"><span className={winner === "A" ? "font-bold text-emerald-700" : "text-neutral-950"}>{a}</span><span className="font-mono font-black">{compactSideScore(match, "A")}</span></div>
+              <div className="flex items-center justify-between gap-3"><span className={winner === "B" ? "font-bold text-emerald-700" : "text-neutral-950"}>{b}</span><span className="font-mono font-black">{compactSideScore(match, "B")}</span></div>
+            </div>
+            {match.finish_type === "retirement" ? <div className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700">Retirement</div> : null}
+            <button type="button" disabled={working} onClick={() => void run(() => undoGuestMatchResult({ competitionId, matchId: match.id }), "Result removed.")} className="mt-4 min-h-11 w-full rounded-lg border border-amber-400 bg-amber-50 px-4 text-sm font-bold text-amber-700 disabled:opacity-50">{working ? "Working..." : "Undo result"}</button>
+            {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
+            {message ? <p className="mt-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
+          </div>
+        ) : null}
       </div>
     )
   }
 
   return (
-    <form onSubmit={(event) => void save(event)} className="p-4">
+    <div className="bg-white">
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3 text-left">
+        <span className="text-xs font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span>
+        <span className="min-w-0"><span className="block truncate text-sm font-medium text-neutral-800">{a}</span><span className="block truncate text-sm font-medium text-neutral-800">{b}</span></span>
+        <span className={["rounded-md border px-2 py-1 text-[9px] font-black", statusClasses(match.status)].join(" ")}>{statusLabel(match.status)}</span>
+        <span className="text-lg font-black text-neutral-400">{expanded ? "−" : "+"}</span>
+      </button>
+      {expanded ? (
+      <form onSubmit={(event) => void save(event)} className="border-t border-neutral-200 bg-neutral-50 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="text-xs font-black text-neutral-400">Match #{match.visible_match_number ?? match.match_number}</div>
@@ -652,12 +628,22 @@ export function InlineMatchEditor({
         </div>
       </div>
 
-      <button type="submit" disabled={working || !resolved} className="mt-4 min-h-11 w-full rounded-lg bg-[var(--arena-yellow)] px-5 text-sm font-black text-[var(--arena-black)] disabled:opacity-40">
+      <button type="submit" disabled={working || !resolved} className="mt-4 min-h-11 w-full rounded-xl bg-[var(--arena-yellow)] px-5 text-sm font-black text-[var(--arena-black)] disabled:opacity-40">
         {working ? "Saving..." : "Save result"}
       </button>
 
       {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
       {message ? <p className="mt-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
-    </form>
+      </form>
+      ) : null}
+    </div>
   )
+}
+
+function compactSideScore(match: MatchRow, side: MatchSide) {
+  if (match.score.format === "best_of_3" && Array.isArray(match.score.sets)) {
+    return match.score.sets.map((raw) => { const row = raw as Record<string, unknown>; return String(side === "A" ? row.a ?? "-" : row.b ?? "-") }).join(" ")
+  }
+  const value = side === "A" ? match.score.scoreA : match.score.scoreB
+  return typeof value === "number" ? String(value) : ""
 }

@@ -28,11 +28,11 @@ export async function updateCompetitionAction(
     throw new Error("Event name is required.")
   }
 
-  if (!startDate || !endDate) {
-    throw new Error("Date From and Date To are required.")
+  if (!startDate) {
+    throw new Error("Date From is required.")
   }
 
-  if (endDate < startDate) {
+  if (endDate && endDate < startDate) {
     throw new Error("Date To cannot be earlier than Date From.")
   }
 
@@ -40,7 +40,7 @@ export async function updateCompetitionAction(
     title,
     description: rawDescription.length > 0 ? rawDescription : null,
     start_at: dateToTimestamp(startDate),
-    end_at: dateToTimestamp(endDate),
+    end_at: endDate ? dateToTimestamp(endDate) : null,
   })
 
   revalidatePath(`/competitions/${competitionId}`)

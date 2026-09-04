@@ -34,7 +34,7 @@ export function DesktopBracketViewer({ view }: DesktopBracketViewerProps) {
 
   return (
     <div className="hidden md:block">
-      <div className="overflow-x-auto border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white shadow-sm">
         <div className="relative" style={{ width: canvasWidth, height: canvasHeight }}>
           <BracketConnectorLayer view={view} width={canvasWidth} height={canvasHeight} />
 

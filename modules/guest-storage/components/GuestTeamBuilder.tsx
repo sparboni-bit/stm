@@ -151,7 +151,7 @@ export function GuestTeamBuilder({
   }
 
   return (
-    <section className="border border-neutral-200 bg-white">
+    <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
       <div className="border-b border-neutral-200 p-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
           Doubles
@@ -165,7 +165,7 @@ export function GuestTeamBuilder({
       </div>
 
       {error ? (
-        <div className="m-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="m-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       ) : null}
@@ -188,7 +188,7 @@ export function GuestTeamBuilder({
                 disabled={working || unavailable}
                 onClick={() => togglePlayer(player.id)}
                 className={[
-                  "flex min-h-12 items-center justify-between gap-3 border px-3 py-2 text-left",
+                  "flex min-h-12 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left",
                   unavailable
                     ? "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400"
                     : selected
@@ -218,7 +218,7 @@ export function GuestTeamBuilder({
           })}
         </div>
 
-        <div className="mt-4 border border-neutral-200 bg-neutral-50 p-4">
+        <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           {selectedPlayers.length === 0 ? (
             <p className="text-sm text-neutral-500">
               Select two available players.
@@ -247,7 +247,7 @@ export function GuestTeamBuilder({
             type="button"
             disabled={working || selectedIds.length !== 2}
             onClick={() => void createTeam()}
-            className="mt-4 min-h-11 w-full bg-[var(--arena-yellow)] px-4 text-sm font-bold text-[var(--arena-black)] disabled:opacity-40"
+            className="mt-4 min-h-11 w-full rounded-xl bg-[var(--arena-yellow)] px-4 text-sm font-bold text-[var(--arena-black)] disabled:opacity-40"
           >
             Create Team
           </button>
@@ -268,7 +268,7 @@ export function GuestTeamBuilder({
           {teams.map((team, index) => (
             <div
               key={team.id}
-              className="flex min-h-12 items-center gap-3 border border-neutral-200 px-3 py-2"
+              className="flex min-h-12 items-center gap-3 rounded-xl border border-neutral-200 px-3 py-2"
             >
               <span className="w-6 shrink-0 text-sm font-bold text-neutral-400">
                 {index + 1}
@@ -284,7 +284,7 @@ export function GuestTeamBuilder({
                 aria-label={`Remove ${team.display_name}`}
                 title="Remove team"
                 onClick={() => void removeTeam(team)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center border border-neutral-300 text-lg leading-none text-neutral-600 disabled:opacity-40"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-300 text-lg leading-none text-neutral-600 disabled:opacity-40"
               >
                 ×
               </button>
@@ -292,7 +292,7 @@ export function GuestTeamBuilder({
           ))}
 
           {teams.length === 0 ? (
-            <div className="border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-500">
+            <div className="rounded-2xl border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-500">
               No teams yet.
             </div>
           ) : null}

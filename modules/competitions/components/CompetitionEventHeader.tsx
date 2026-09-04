@@ -1,9 +1,12 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
+
 import { updateCompetitionAction } from "../actions/updateCompetition"
+import { setCompetitionClosedAction } from "../actions/setCompetitionClosed"
 
 type Props = {
   competitionId: string
@@ -12,6 +15,7 @@ type Props = {
   startAt: string | null
   endAt: string | null
   organizerName: string
+  isClosed: boolean
   readOnly?: boolean
 }
 
@@ -55,6 +59,22 @@ function PencilIcon() {
   )
 }
 
+function CalendarIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="5.5" width="17" height="15" rx="2" />
+      <path d="M8 3.5v4M16 3.5v4M3.5 10h17" />
+    </svg>
+  )
+}
+
 export function CompetitionEventHeader({
   competitionId,
   title,
@@ -62,14 +82,35 @@ export function CompetitionEventHeader({
   startAt,
   endAt,
   organizerName,
+  isClosed,
   readOnly = false,
 }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
   const [pending, startTransition] = useTransition()
+  const startDateRef = useRef<HTMLInputElement>(null)
+  const endDateRef = useRef<HTMLInputElement>(null)
 
   const dates = formatDateRange(startAt, endAt)
+
+  function openDatePicker(input: HTMLInputElement | null) {
+    if (!input || input.disabled) return
+
+    input.focus()
+
+    if (typeof input.showPicker === "function") {
+      try {
+        input.showPicker()
+        return
+      } catch {
+        // Fall back to the browser's native click handling below.
+      }
+    }
+
+    input.click()
+  }
 
   function handleSubmit(formData: FormData) {
     setError(null)
@@ -84,6 +125,27 @@ export function CompetitionEventHeader({
           cause instanceof Error
             ? cause.message
             : "Unable to update the event.",
+        )
+      }
+    })
+  }
+
+  function handleEventStatusChange() {
+    setError(null)
+
+    startTransition(async () => {
+      try {
+        await setCompetitionClosedAction(
+          competitionId,
+          !isClosed,
+        )
+        setStatusDialogOpen(false)
+        router.refresh()
+      } catch (cause) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Unable to update event status.",
         )
       }
     })
@@ -196,15 +258,33 @@ export function CompetitionEventHeader({
                   Date From
                 </label>
 
-                <input
-                  id="event-edit-start-date"
-                  name="start_date"
-                  type="date"
-                  required
-                  defaultValue={dateInputValue(startAt)}
-                  disabled={pending}
-                  className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-slate-950 disabled:bg-slate-100"
-                />
+                <div className="relative">
+                  <input
+                    ref={startDateRef}
+                    id="event-edit-start-date"
+                    name="start_date"
+                    type="date"
+                    onPointerDown={(event) => {
+                      if (event.pointerType === "mouse") {
+                        openDatePicker(event.currentTarget)
+                      }
+                    }}
+                    required
+                    defaultValue={dateInputValue(startAt)}
+                    disabled={pending}
+                    className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none focus:border-slate-950 disabled:bg-slate-100"
+                  />
+
+                  <button
+                    type="button"
+                    aria-label="Open Date From calendar"
+                    disabled={pending}
+                    onClick={() => openDatePicker(startDateRef.current)}
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <CalendarIcon />
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -215,15 +295,32 @@ export function CompetitionEventHeader({
                   Date To
                 </label>
 
-                <input
-                  id="event-edit-end-date"
-                  name="end_date"
-                  type="date"
-                  required
-                  defaultValue={dateInputValue(endAt ?? startAt)}
-                  disabled={pending}
-                  className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-slate-950 disabled:bg-slate-100"
-                />
+                <div className="relative">
+                  <input
+                    ref={endDateRef}
+                    id="event-edit-end-date"
+                    name="end_date"
+                    type="date"
+                    onPointerDown={(event) => {
+                      if (event.pointerType === "mouse") {
+                        openDatePicker(event.currentTarget)
+                      }
+                    }}
+                    defaultValue={dateInputValue(endAt)}
+                    disabled={pending}
+                    className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none focus:border-slate-950 disabled:bg-slate-100"
+                  />
+
+                  <button
+                    type="button"
+                    aria-label="Open Date To calendar"
+                    disabled={pending}
+                    onClick={() => openDatePicker(endDateRef.current)}
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <CalendarIcon />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -249,6 +346,75 @@ export function CompetitionEventHeader({
               </button>
             </div>
           </form>
+
+          <div className="mt-6 border-t border-slate-200 pt-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                  Event status
+                </p>
+
+                <div className="mt-1 flex items-center gap-2">
+                  <span
+                    className={[
+                      "inline-flex rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide",
+                      isClosed
+                        ? "bg-slate-100 text-slate-600"
+                        : "bg-[var(--arena-yellow)] text-slate-950",
+                    ].join(" ")}
+                  >
+                    {isClosed ? "Closed" : "Open"}
+                  </span>
+
+                  <p className="text-sm text-slate-500">
+                    {isClosed
+                      ? "Reopening moves this event back to Open Events."
+                      : "Closing moves this event to Past Events. Stages and results are not changed."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setStatusDialogOpen(true)}
+                className={[
+                  "inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl px-5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50",
+                  isClosed
+                    ? "border border-slate-950 bg-slate-950 text-white hover:bg-slate-800"
+                    : "border border-red-200 bg-white text-red-700 hover:bg-red-50",
+                ].join(" ")}
+              >
+                {isClosed ? "Reopen event" : "Close event"}
+              </button>
+            </div>
+          </div>
+
+          <ConfirmDialog
+            open={statusDialogOpen}
+            title={
+              isClosed
+                ? `Reopen "${title}"?`
+                : `Close "${title}"?`
+            }
+            description={
+              isClosed
+                ? "This event will move back to Open Events. Its stages and results will not be changed."
+                : "This event will move to Past Events. Its stages, matches and results will not be changed."
+            }
+            confirmLabel={
+              isClosed
+                ? "Reopen event"
+                : "Close event"
+            }
+            pending={pending}
+            onCancel={() => {
+              if (!pending) {
+                setStatusDialogOpen(false)
+              }
+            }}
+            onConfirm={handleEventStatusChange}
+          />
         </section>
       ) : null}
     </>

@@ -63,7 +63,7 @@ export async function updateCompetition(
     title: string
     description: string | null
     start_at: string
-    end_at: string
+    end_at: string | null
   },
 ): Promise<void> {
   const supabase = await createClient()
@@ -87,6 +87,36 @@ export async function updateCompetition(
   if (!updated || updated.length === 0) {
     throw new Error(
       "Event could not be updated. Check update permissions.",
+    )
+  }
+}
+
+
+export async function setCompetitionClosed(
+  competitionId: string,
+  isClosed: boolean,
+): Promise<void> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("competitions")
+    .update({
+      is_closed: isClosed,
+      closed_at: isClosed
+        ? new Date().toISOString()
+        : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", competitionId)
+    .select("id")
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error(
+      "Event status could not be updated. Check update permissions.",
     )
   }
 }

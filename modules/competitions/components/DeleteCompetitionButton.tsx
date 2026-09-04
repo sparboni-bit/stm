@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
+
 import { deleteCompetitionAction } from "../actions/deleteCompetition"
 
 type Props = {
@@ -19,20 +21,10 @@ export function DeleteCompetitionButton({
   const [pending, setPending] =
     useState(false)
 
+  const [confirmOpen, setConfirmOpen] =
+    useState(false)
+
   async function handleDelete() {
-    const confirmed = window.confirm(
-      [
-        `Delete "${eventTitle}"?`,
-        "",
-        "This will permanently delete the event, all its stages, matches, results and related data.",
-        "This action cannot be undone.",
-      ].join("\n"),
-    )
-
-    if (!confirmed) {
-      return
-    }
-
     setPending(true)
 
     try {
@@ -53,15 +45,30 @@ export function DeleteCompetitionButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleDelete}
-      disabled={pending}
-      aria-label={`Delete ${eventTitle}`}
-      title="Delete event"
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-white text-sm text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {pending ? "…" : "🗑"}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        disabled={pending}
+        aria-label={`Delete ${eventTitle}`}
+        title="Delete event"
+        className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {pending ? "Deleting..." : "Delete"}
+      </button>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={`Delete "${eventTitle}"?`}
+        description="This will permanently delete the event, all its stages, matches, results and related data."
+        pending={pending}
+        onCancel={() => {
+          if (!pending) {
+            setConfirmOpen(false)
+          }
+        }}
+        onConfirm={handleDelete}
+      />
+    </>
   )
 }

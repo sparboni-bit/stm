@@ -25,8 +25,9 @@ import { GuestMatchesManager } from "./GuestMatchesManager"
 import { GuestEliminationBracket } from "./GuestEliminationBracket"
 import { GuestRoundRobinStandings } from "./GuestRoundRobinStandings"
 import { GuestIndividualRotationStandings } from "./GuestIndividualRotationStandings"
+import { GuestIndividualRotationRotation } from "./GuestIndividualRotationRotation"
 
-type StageSection = "stage" | "players" | "matches" | "standings"
+type StageSection = "stage" | "players" | "rotation" | "matches" | "standings"
 type WorkspaceSection = "home" | "stages"
 
 function readWorkspaceSectionFromLocation(): WorkspaceSection {
@@ -45,6 +46,7 @@ function readStageSectionFromLocation(): StageSection {
   if (typeof window === "undefined") return "stage"
   const value = new URLSearchParams(window.location.search).get("view")
   return value === "players" ||
+    value === "rotation" ||
     value === "matches" ||
     value === "standings"
     ? value
@@ -73,7 +75,7 @@ export function GuestTournamentWorkspace({
       const value = await getGuestCompetitionWorkspace(competitionId)
       setDocument(value ? { ...value } : null)
       if (!value) {
-        setError("This guest tournament was not found on this device.")
+        setError("This tournament was not found on this device.")
       }
     } catch (cause) {
       setError(
@@ -173,7 +175,7 @@ export function GuestTournamentWorkspace({
   if (!document || error) {
     return (
       <div className="border border-red-200 bg-red-50 p-5">
-        <h1 className="font-bold text-red-800">Guest tournament unavailable</h1>
+        <h1 className="font-bold text-red-800">Tournament unavailable</h1>
         <p className="mt-2 text-sm text-red-700">
           {error ?? "This tournament is not available on this device."}
         </p>
@@ -181,7 +183,7 @@ export function GuestTournamentWorkspace({
           href="/guest"
           className="mt-4 inline-flex min-h-10 items-center border border-red-300 bg-white px-4 text-sm font-semibold text-red-800"
         >
-          ← Guest tournaments
+          ← Home
         </Link>
       </div>
     )
@@ -241,10 +243,26 @@ export function GuestTournamentWorkspace({
                 <div className="mt-7 border-t border-neutral-200 pt-5">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{selectedStage.stageType.replaceAll("_", " ")} — {selectedStage.name}</p>
                   {[
-                    ["stage", "Stage Setup"],
-                    ["players", selectedStage.stageType === "round_robin" ? "Select Roster" : "Select Players"],
-                    ["matches", selectedStage.stageType === "elimination" ? "Bracket" : "Matches"],
-                    ...((selectedStage.stageType === "round_robin" || selectedStage.stageType === "individual_rotation") ? [["standings", "Standings"]] : []),
+                    ...(selectedStage.stageType === "individual_rotation"
+                      ? [
+                          ["players", "Select Players"],
+                          ["stage", "Stage Setup"],
+                          ["rotation", "Rotation"],
+                          ["matches", "Matches"],
+                          ["standings", "Standings"],
+                        ]
+                      : selectedStage.stageType === "elimination"
+                        ? [
+                            ["stage", "Stage Setup"],
+                            ["players", "Players"],
+                            ["matches", "Bracket"],
+                          ]
+                        : [
+                            ["stage", "Stage Setup"],
+                            ["players", "Players"],
+                            ["matches", "Matches"],
+                            ["standings", "Standings"],
+                          ]),
                   ].map(([key,label]) => (
                     <button key={key} type="button" onClick={() => openStageSection(key as StageSection)} className={["mb-1 flex min-h-9 w-full items-center rounded-lg px-3 text-left text-sm font-semibold", stageSection === key ? "bg-yellow-100 text-neutral-950" : "text-neutral-500"].join(" ")}>•&nbsp; {label}</button>
                   ))}
@@ -325,7 +343,38 @@ export function GuestTournamentWorkspace({
               ← Stages
             </button>
 
-            {stageSection === "stage" ? (
+            {selectedStage.stageType === "individual_rotation" || selectedStage.stageType === "elimination" || selectedStage.stageType === "round_robin" ? (
+              <>
+                {(selectedStage.stageType === "individual_rotation"
+                  ? [
+                      ["players", "Players"],
+                      ["stage", "Setup"],
+                      ["rotation", "Rotation"],
+                      ["matches", "Matches"],
+                      ["standings", "Standings"],
+                    ]
+                  : [
+                      ["stage", "Setup"],
+                      ["players", "Players"],
+                      ["matches", "Bracket"],
+                    ]
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => openStageSection(key as StageSection)}
+                    className={[
+                      "inline-flex min-h-10 items-center rounded-full px-4 text-sm font-bold",
+                      stageSection === key
+                        ? "bg-neutral-950 text-white"
+                        : "border border-neutral-950 bg-white text-neutral-950",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </>
+            ) : stageSection === "stage" ? (
               <>
                 <button
                   type="button"
@@ -347,7 +396,7 @@ export function GuestTournamentWorkspace({
                     onClick={() => openStageSection("matches")}
                     className="inline-flex min-h-10 items-center rounded-full bg-neutral-950 px-4 text-sm font-bold text-white"
                   >
-                    {selectedStage.stageType === "elimination" ? "Bracket" : "Matches"}
+                    Matches
                   </button>
                 ) : null}
               </>
@@ -374,61 +423,62 @@ export function GuestTournamentWorkspace({
         <section>
           {stageSection === "stage" ? (
             <div className="space-y-4">
-              {(selectedStage.stageType === "round_robin" || selectedStage.stageType === "elimination") ? (
-                <>
-                  <div id="guest-stage-configure" className="scroll-mt-24">
-                    <GuestStageGenerationPanel
-                      competitionId={competitionId}
-                      stage={selectedStage}
-                      roster={document.entries}
-                      stageEntries={selectedStageEntries}
-                      matchCount={selectedMatches.length}
-                      onChanged={load}
-                      onOpenMatches={() => openStageSection("matches")}
-                    />
-                  </div>
-                  <div id="guest-stage-players" className="scroll-mt-24">
-                    <GuestStageEntriesManager
-                      competitionId={competitionId}
-                      stage={selectedStage}
-                      roster={document.entries}
-                      stageEntries={selectedStageEntries}
-                      onChanged={load}
-                    />
-                  </div>
-                </>
+              {selectedStage.stageType === "round_robin" ? (
+                <div id="guest-stage-configure" className="scroll-mt-24">
+                  <GuestStageGenerationPanel
+                    competitionId={competitionId}
+                    stage={selectedStage}
+                    roster={document.entries}
+                    stageEntries={selectedStageEntries}
+                    matchCount={selectedMatches.length}
+                    onChanged={load}
+                    onSelectPlayers={() => openStageSection("players")}
+                    onOpenMatches={() => openStageSection("matches")}
+                  />
+                </div>
               ) : (
-                <>
-                  <div id="guest-stage-players" className="scroll-mt-24">
-                    <GuestStageEntriesManager
-                      competitionId={competitionId}
-                      stage={selectedStage}
-                      roster={document.entries}
-                      stageEntries={selectedStageEntries}
-                      onChanged={load}
-                    />
-                  </div>
-                  <div id="guest-stage-configure" className="scroll-mt-24">
-                    <GuestStageGenerationPanel
-                      competitionId={competitionId}
-                      stage={selectedStage}
-                      roster={document.entries}
-                      stageEntries={selectedStageEntries}
-                      matchCount={selectedMatches.length}
-                      onChanged={load}
-                      onOpenMatches={() => openStageSection("matches")}
-                    />
-                  </div>
-                </>
+                <div id="guest-stage-configure" className="scroll-mt-24">
+                  <GuestStageGenerationPanel
+                    competitionId={competitionId}
+                    stage={selectedStage}
+                    roster={document.entries}
+                    stageEntries={selectedStageEntries}
+                    matchCount={selectedMatches.length}
+                    onChanged={load}
+                    onOpenMatches={() => openStageSection("matches")}
+                    onSelectPlayers={() => openStageSection("players")}
+                  />
+                </div>
               )}
             </div>
           ) : null}
 
           {stageSection === "players" ? (
-            <GuestRosterManager
-              competitionId={competitionId}
-              entries={document.entries}
-              onChanged={load}
+            selectedStage.stageType === "individual_rotation" ||
+            selectedStage.stageType === "elimination" ||
+            selectedStage.stageType === "round_robin" ? (
+              <GuestStageEntriesManager
+                competitionId={competitionId}
+                stage={selectedStage}
+                roster={document.entries}
+                stageEntries={selectedStageEntries}
+                onChanged={load}
+              />
+            ) : (
+              <GuestRosterManager
+                competitionId={competitionId}
+                entries={document.entries}
+                onChanged={load}
+              />
+            )
+          ) : null}
+
+          {stageSection === "rotation" &&
+          selectedStage.stageType === "individual_rotation" ? (
+            <GuestIndividualRotationRotation
+              matches={selectedMatches}
+              roster={document.entries}
+              stageEntries={selectedStageEntries}
             />
           ) : null}
 
@@ -439,6 +489,7 @@ export function GuestTournamentWorkspace({
                 stage={selectedStage}
                 matches={selectedMatches}
                 entries={document.entries}
+                stageEntries={selectedStageEntries}
                 onChanged={load}
               />
             ) : (
