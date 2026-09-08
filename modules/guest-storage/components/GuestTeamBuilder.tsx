@@ -44,7 +44,8 @@ export function GuestTeamBuilder({
         .filter(
           (entry) =>
             entry.entry_type === "player" &&
-            entry.status === "active",
+            entry.status === "active" &&
+            entry.metadata?.hiddenFromRoster !== true,
         )
         .sort((a, b) => a.sort_order - b.sort_order),
     [entries],
@@ -56,7 +57,8 @@ export function GuestTeamBuilder({
         .filter(
           (entry) =>
             entry.entry_type === "team" &&
-            entry.status === "active",
+            entry.status === "active" &&
+            entry.metadata?.hiddenFromRoster !== true,
         )
         .sort((a, b) => a.sort_order - b.sort_order),
     [entries],

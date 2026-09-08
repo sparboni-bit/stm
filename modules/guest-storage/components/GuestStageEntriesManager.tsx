@@ -78,6 +78,7 @@ export function GuestStageEntriesManager({
   const available = roster.filter(
     (entry) =>
       entry.status === "active" &&
+      entry.metadata?.hiddenFromRoster !== true &&
       !assignedIds.has(entry.id),
   )
 
@@ -234,7 +235,7 @@ export function GuestStageEntriesManager({
   }
 
   if (stage.stageType === "individual_rotation") {
-    const players = roster.filter((entry) => entry.status === "active" && entry.entry_type === "player")
+    const players = roster.filter((entry) => entry.status === "active" && entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true)
     const activeIds = new Set(activeStageEntries.map((item) => item.competition_entry_id))
     const allSelected = players.length > 0 && players.every((entry) => activeIds.has(entry.id))
 
@@ -338,7 +339,7 @@ export function GuestStageEntriesManager({
   }
 
   if (stage.stageType === "elimination") {
-    const entriesForMode = roster.filter((entry) => entry.status === "active" && entry.entry_type === expectedEntryType)
+    const entriesForMode = roster.filter((entry) => entry.status === "active" && entry.entry_type === expectedEntryType && entry.metadata?.hiddenFromRoster !== true)
     const activeIds = new Set(activeStageEntries.map((item) => item.competition_entry_id))
     const allSelected = entriesForMode.length > 0 && entriesForMode.every((entry) => activeIds.has(entry.id))
 
@@ -385,7 +386,7 @@ export function GuestStageEntriesManager({
 
   if (stage.stageType === "round_robin") {
     const entriesForMode = roster.filter(
-      (entry) => entry.status === "active" && entry.entry_type === expectedEntryType,
+      (entry) => entry.status === "active" && entry.entry_type === expectedEntryType && entry.metadata?.hiddenFromRoster !== true,
     )
     const activeIds = new Set(
       activeStageEntries.map((item) => item.competition_entry_id),

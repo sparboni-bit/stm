@@ -258,6 +258,38 @@ export async function removeGuestCompetitionEntry(input: {
   )
 }
 
+
+export async function clearGuestCompetitionRoster(input: {
+  competitionId: string
+}): Promise<void> {
+  const document = requireDocument(
+    await localStorageGuestAdapter.get(input.competitionId),
+  )
+
+  const referencedEntryIds = new Set(
+    document.stageEntries.map((entry) => entry.competition_entry_id),
+  )
+  const now = new Date().toISOString()
+
+  const entries = document.entries
+    .filter((entry) => referencedEntryIds.has(entry.id))
+    .map((entry) => ({
+      ...entry,
+      metadata: {
+        ...entry.metadata,
+        hiddenFromRoster: true,
+      },
+      updated_at: now,
+    }))
+
+  await localStorageGuestAdapter.save(
+    touchGuestDocument({
+      ...document,
+      entries,
+    }),
+  )
+}
+
 export async function createGuestTeam(input: {
   competitionId: string
   playerEntryIds: [string, string]

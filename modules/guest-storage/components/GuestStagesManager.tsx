@@ -3,7 +3,9 @@
 import Image from "next/image"
 import {
   FormEvent,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
 
@@ -114,11 +116,35 @@ export function GuestStagesManager({
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [stageToDelete, setStageToDelete] = useState<CompetitionStage | null>(null)
+  const [newStageId, setNewStageId] = useState<string | null>(null)
+  const newStageRef = useRef<HTMLLIElement | null>(null)
 
   const suggestedName = useMemo(
     () => defaultStageName(stageType, stages),
     [stageType, stages],
   )
+
+
+  useEffect(() => {
+    if (!newStageId) return
+    if (!stages.some((stage) => stage.id === newStageId)) return
+
+    const frame = window.requestAnimationFrame(() => {
+      newStageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      })
+    })
+
+    const timeout = window.setTimeout(() => {
+      setNewStageId(null)
+    }, 2200)
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+    }
+  }, [newStageId, stages])
 
   async function run(operation: () => Promise<void>) {
     setWorking(true)
@@ -144,13 +170,14 @@ export function GuestStagesManager({
     const stageName = name.trim() || suggestedName
 
     void run(async () => {
-      await createGuestCompetitionStage({
+      const created = await createGuestCompetitionStage({
         competitionId,
         name: stageName,
         stageType,
         playMode: "singles",
       })
 
+      setNewStageId(created.id)
       setName("")
     })
   }
@@ -278,7 +305,7 @@ export function GuestStagesManager({
 
         <p className="mt-4 text-sm text-slate-500">
           <strong className="font-bold text-neutral-950">
-            {roster.length} player{roster.length === 1 ? "" : "s"}
+            {roster.filter((entry) => entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true).length} player{roster.filter((entry) => entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true).length === 1 ? "" : "s"}
           </strong>{" "}
           available in the roster.
           {onOpenRoster ? (
@@ -329,7 +356,13 @@ export function GuestStagesManager({
               return (
                 <li
                   key={stage.id}
-                  className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                  ref={stage.id === newStageId ? newStageRef : undefined}
+                  className={[
+                    "flex flex-col gap-4 rounded-xl border bg-white p-4 transition-all duration-500 sm:flex-row sm:items-center sm:justify-between",
+                    stage.id === newStageId
+                      ? "border-amber-400 ring-4 ring-amber-100"
+                      : "border-slate-200",
+                  ].join(" ")}
                 >
                   <button
                     type="button"

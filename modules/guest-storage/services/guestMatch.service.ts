@@ -528,3 +528,101 @@ export async function undoGuestMatchResult(input: {
     }),
   )
 }
+
+
+export async function swapGuestIndividualRotationPlayers(input: {
+  competitionId: string
+  stageId: string
+  roundNumber: number
+  firstEntryId: string
+  secondEntryId: string
+}): Promise<void> {
+  if (input.firstEntryId === input.secondEntryId) {
+    throw new Error("Choose two different players.")
+  }
+
+  const document = requireDocument(
+    await localStorageGuestAdapter.get(input.competitionId),
+  )
+
+  const stage = document.stages.find((item) => item.id === input.stageId)
+  if (!stage || stage.stageType !== "individual_rotation") {
+    throw new Error("Individual Rotation stage not found.")
+  }
+
+  const activeEntryIds = new Set(
+    document.stageEntries
+      .filter((entry) => entry.stage_id === input.stageId && entry.status === "active")
+      .map((entry) => entry.competition_entry_id),
+  )
+
+  if (!activeEntryIds.has(input.firstEntryId) || !activeEntryIds.has(input.secondEntryId)) {
+    throw new Error("Both players must belong to this Stage.")
+  }
+
+  const roundMatches = document.matches.filter(
+    (match) =>
+      match.stage_id === input.stageId &&
+      match.round_number === input.roundNumber,
+  )
+
+  if (!roundMatches.length) {
+    throw new Error("Round not found.")
+  }
+
+  const roundLocked = roundMatches.some(
+    (match) =>
+      match.status === "on_court" ||
+      match.status === "completed" ||
+      Object.keys(match.score ?? {}).length > 0,
+  )
+  if (roundLocked) {
+    throw new Error("Players cannot be swapped after this round has started or results have been entered.")
+  }
+
+  let firstFound = false
+  let secondFound = false
+
+  for (const match of roundMatches) {
+    for (const slot of [match.side_a, match.side_b]) {
+      if (slot.type !== "rotation_team" || !slot.entryIds) continue
+      if (slot.entryIds.includes(input.firstEntryId)) firstFound = true
+      if (slot.entryIds.includes(input.secondEntryId)) secondFound = true
+    }
+  }
+
+  if (!firstFound && !secondFound) {
+    throw new Error("At least one selected player must be playing in this round.")
+  }
+
+  const now = new Date().toISOString()
+  const swapSlot = (slot: MatchSlot): MatchSlot => {
+    if (slot.type !== "rotation_team" || !slot.entryIds) return slot
+
+    return {
+      ...slot,
+      entryIds: slot.entryIds.map((id) =>
+        id === input.firstEntryId
+          ? input.secondEntryId
+          : id === input.secondEntryId
+            ? input.firstEntryId
+            : id,
+      ) as [string, string],
+    }
+  }
+
+  const matches = document.matches.map((match) =>
+    match.stage_id === input.stageId && match.round_number === input.roundNumber
+      ? {
+          ...match,
+          side_a: swapSlot(match.side_a),
+          side_b: swapSlot(match.side_b),
+          updated_at: now,
+        }
+      : match,
+  )
+
+  await localStorageGuestAdapter.save(
+    touchGuestDocument({ ...document, matches }),
+  )
+}

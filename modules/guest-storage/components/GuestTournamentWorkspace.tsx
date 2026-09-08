@@ -285,7 +285,7 @@ export function GuestTournamentWorkspace({
       <GuestHome
         playerCount={
           document.entries.filter(
-            (entry) => entry.entry_type === "player",
+            (entry) => entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true,
           ).length
         }
         stageCount={document.stages.length}
@@ -476,9 +476,12 @@ export function GuestTournamentWorkspace({
           {stageSection === "rotation" &&
           selectedStage.stageType === "individual_rotation" ? (
             <GuestIndividualRotationRotation
+              competitionId={competitionId}
+              stageId={selectedStage.id}
               matches={selectedMatches}
               roster={document.entries}
               stageEntries={selectedStageEntries}
+              onChanged={load}
             />
           ) : null}
 

@@ -16,6 +16,7 @@ import {
   bulkAddGuestCompetitionEntries,
   removeGuestCompetitionEntry,
   renameGuestCompetitionEntry,
+  clearGuestCompetitionRoster,
 } from "@/modules/guest-storage/services"
 
 import { GuestTeamBuilder } from "./GuestTeamBuilder"
@@ -66,14 +67,15 @@ export function GuestRosterManager({
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkText, setBulkText] = useState("")
   const [teamsOpen, setTeamsOpen] = useState(false)
+  const [clearOpen, setClearOpen] = useState(false)
 
   const players = useMemo(
-    () => entries.filter((entry) => entry.entry_type === "player"),
+    () => entries.filter((entry) => entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true),
     [entries],
   )
 
   const teams = useMemo(
-    () => entries.filter((entry) => entry.entry_type === "team"),
+    () => entries.filter((entry) => entry.entry_type === "team" && entry.metadata?.hiddenFromRoster !== true),
     [entries],
   )
 
@@ -194,6 +196,15 @@ export function GuestRosterManager({
           {teamsOpen
             ? "Close Teams"
             : `Build Teams${teams.length > 0 ? ` (${teams.length})` : ""}`}
+        </button>
+
+        <button
+          type="button"
+          disabled={working || (players.length === 0 && teams.length === 0)}
+          onClick={() => setClearOpen(true)}
+          className="min-h-10 rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 disabled:opacity-40"
+        >
+          Empty Roster
         </button>
       </div>
 
@@ -359,6 +370,36 @@ export function GuestRosterManager({
           </div>
         ) : null}
       </div>
+
+      {clearOpen ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="clear-roster-title" className="w-full max-w-sm rounded-[18px] border border-neutral-200 bg-white p-5 shadow-2xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-red-600">Empty roster</p>
+            <h2 id="clear-roster-title" className="mt-1 text-xl font-black text-neutral-950">Remove all players and teams?</h2>
+            <p className="mt-3 text-sm leading-5 text-slate-600">The roster will be emptied completely. Existing Stage data and results will remain available.</p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button type="button" disabled={working} onClick={() => setClearOpen(false)} className="min-h-11 rounded-[9px] border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-950">Cancel</button>
+              <button
+                type="button"
+                disabled={working}
+                onClick={() => {
+                  setClearOpen(false)
+                  void run(async () => {
+                    await clearGuestCompetitionRoster({ competitionId })
+                    setBulkOpen(false)
+                    setTeamsOpen(false)
+                    setBulkText("")
+                    setEditingId(null)
+                  })
+                }}
+                className="min-h-11 rounded-[9px] border border-red-300 bg-white px-4 text-sm font-black text-red-700 disabled:opacity-50"
+              >
+                Empty Roster
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }
