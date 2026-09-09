@@ -141,7 +141,16 @@ export function GuestMatchesManager({
       ? activeStage
       : null
   const matchDurationMinutes = Math.max(1, Number(timerStage?.settings.matchDurationMinutes ?? 10))
-  const timer = useStageTimer(matchDurationMinutes)
+  const timer = useStageTimer(
+    matchDurationMinutes,
+    timerStage
+      ? {
+          competitionId,
+          stageId: timerStage.id,
+          stageName: timerStage.name,
+        }
+      : undefined,
+  )
   const [scoreFormat, setScoreFormat] = useState<ScoreFormat>("single_set")
   const [openRounds, setOpenRounds] = useState<Set<string>>(() => new Set())
   const [addRoundWorking, setAddRoundWorking] = useState(false)
