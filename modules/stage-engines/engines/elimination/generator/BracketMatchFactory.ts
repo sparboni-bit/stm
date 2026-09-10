@@ -1,3 +1,4 @@
+import { createId } from "@/lib/createId"
 import type {
   BracketMatch,
   BracketRound,
@@ -46,7 +47,7 @@ export class BracketMatchFactory {
       ) {
 
         const match: BracketMatch = {
-          id: crypto.randomUUID(),
+          id: createId("bracket_match"),
 
           roundId: round.id,
 

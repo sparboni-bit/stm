@@ -1,3 +1,4 @@
+import { createId } from "@/lib/createId"
 import type {
   StageGenerationContext,
   StageGenerationResult,
@@ -509,7 +510,7 @@ export async function generateIndividualRotationSchedule(
     )
 
   const output: IndividualRotationSchedule = {
-    id: crypto.randomUUID(),
+    id: createId("ir_schedule"),
     roundCount:
       schedule.rounds.length,
     matchCount,

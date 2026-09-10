@@ -82,7 +82,7 @@ export function GlobalActiveTimerBar() {
       stage: timer.stageId,
       view: "matches",
     })
-    return `/guest/competitions/${encodeURIComponent(timer.competitionId)}?${params.toString()}`
+    return `/guest?${params.toString()}`
   }, [timer])
 
   if (!timer) return null
@@ -97,10 +97,16 @@ export function GlobalActiveTimerBar() {
   return (
     <div className="pointer-events-none fixed inset-x-3 top-3 z-[100] flex justify-center sm:justify-end">
       <div className="pointer-events-auto flex min-h-14 w-full max-w-md items-center gap-3 rounded-2xl border border-neutral-950 bg-white px-3 py-2 shadow-xl sm:w-auto sm:min-w-[360px]">
-        <span className={[
-          "h-2.5 w-2.5 shrink-0 rounded-full",
-          timer.status === "running" ? "bg-red-500" : timer.status === "ended" ? "bg-red-700" : "bg-neutral-400",
-        ].join(" ")} />
+        <span
+          className={[
+            "h-2.5 w-2.5 shrink-0 rounded-full",
+            timer.status === "running"
+              ? "bg-red-500"
+              : timer.status === "ended"
+                ? "bg-red-700"
+                : "bg-neutral-400",
+          ].join(" ")}
+        />
 
         <div className="min-w-0 flex-1">
           <div className="truncate text-[11px] font-black uppercase tracking-[0.08em] text-neutral-500">

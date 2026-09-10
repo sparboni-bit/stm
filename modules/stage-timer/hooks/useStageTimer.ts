@@ -63,12 +63,33 @@ export function useStageTimer(
   useEffect(() => {
     if (persistentContext) {
       const saved = readPersistentStageTimer()
-      if (saved?.stageId === persistentContext.stageId && saved.competitionId === persistentContext.competitionId) {
+
+      if (
+        saved?.stageId === persistentContext.stageId &&
+        saved.competitionId === persistentContext.competitionId
+      ) {
         const nextRemaining = getPersistentTimerRemaining(saved)
+
+        // A completed timer must reopen from the configured
+        // stage duration instead of remaining at 00:00.
+        if (saved.status === "ended" || nextRemaining <= 0) {
+          clearPersistentStageTimer()
+          setRemainingSeconds(durationSeconds)
+          setRunning(false)
+          endAtRef.current = null
+          void releaseWakeLock()
+          return
+        }
+
         setRemainingSeconds(nextRemaining)
-        setRunning(saved.status === "running" && nextRemaining > 0)
-        endAtRef.current = saved.status === "running" ? saved.endAt : null
-        if (saved.status === "running" && nextRemaining > 0) void requestWakeLock()
+        setRunning(saved.status === "running")
+        endAtRef.current =
+          saved.status === "running" ? saved.endAt : null
+
+        if (saved.status === "running") {
+          void requestWakeLock()
+        }
+
         return
       }
     }

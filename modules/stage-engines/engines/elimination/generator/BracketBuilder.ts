@@ -1,3 +1,4 @@
+import { createId } from "@/lib/createId"
 import {
   BracketDrawEngine,
   RandomDrawStrategy,
@@ -47,7 +48,7 @@ export class BracketBuilder {
     )
 
     const tree: BracketTree = {
-      id: crypto.randomUUID(),
+      id: createId("bracket"),
       engineType: "single-elimination",
       size,
       entries,

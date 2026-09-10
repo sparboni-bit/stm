@@ -1,3 +1,4 @@
+import { createId } from "@/lib/createId"
 import type {
   IndividualRotationSchedule,
 } from "../domain/IndividualRotationSchedule"
@@ -86,7 +87,7 @@ export class IndividualRotationMapper {
           match.courtNumber ?? null
 
         matches.push({
-          id: crypto.randomUUID(),
+          id: createId("ir_match"),
           match_number: matchNumber,
           visible_match_number:
             matchNumber,

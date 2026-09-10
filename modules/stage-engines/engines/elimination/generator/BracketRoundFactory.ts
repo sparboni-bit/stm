@@ -1,3 +1,4 @@
+import { createId } from "@/lib/createId"
 import type { BracketRound } from "../domain";
 
 /**
@@ -38,7 +39,7 @@ export class BracketRoundFactory {
     for (let order = 1; order <= roundCount; order++) {
 
       rounds.push({
-        id: crypto.randomUUID(),
+        id: createId("bracket_round"),
 
         order,
 

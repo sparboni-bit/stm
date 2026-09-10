@@ -1,7 +1,16 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+const isMobileBuild =
+  process.env.STM_BUILD_TARGET === "mobile"
 
-export default nextConfig;
+const nextConfig: NextConfig = isMobileBuild
+  ? {
+      output: "export",
+      trailingSlash: true,
+      images: {
+        unoptimized: true,
+      },
+    }
+  : {}
+
+export default nextConfig

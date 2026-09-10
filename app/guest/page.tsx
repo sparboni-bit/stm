@@ -1,20 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 
-import { GuestAppHeader } from "@/modules/guest-storage/components"
-import {
-  createGuestCompetition,
-} from "@/modules/guest-storage"
-import {
-  listGuestCompetitionWorkspaces,
-} from "@/modules/guest-storage/services"
+import { GuestAppHeader } from "@/modules/guest-storage/components/GuestAppHeader"
+import { GuestTournamentWorkspace } from "@/modules/guest-storage/components/GuestTournamentWorkspace"
+import { createGuestCompetition } from "@/modules/guest-storage/repositories/guestCompetition.repository"
+import { listGuestCompetitionWorkspaces } from "@/modules/guest-storage/services/guestCompetition.service"
 
 const GUEST_WORKSPACE_TITLE = "Pickleball Tournament"
 
 export default function GuestHomePage() {
-  const router = useRouter()
+  const [competitionId, setCompetitionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -24,7 +20,7 @@ export default function GuestHomePage() {
       try {
         const documents = await listGuestCompetitionWorkspaces()
 
-        // Guest Direct Flow: one invisible local Tournament container.
+        // Mobile V1 Direct Flow: one invisible local Tournament container.
         // If older tests left more than one document, reopen the most recently
         // updated one instead of exposing a Tournament picker to the user.
         const existing = [...documents].sort(
@@ -35,9 +31,7 @@ export default function GuestHomePage() {
 
         if (existing) {
           if (!cancelled) {
-            router.replace(
-              `/guest/competitions/${existing.competition.id}`,
-            )
+            setCompetitionId(existing.competition.id)
           }
           return
         }
@@ -48,9 +42,7 @@ export default function GuestHomePage() {
         })
 
         if (!cancelled) {
-          router.replace(
-            `/guest/competitions/${competition.id}`,
-          )
+          setCompetitionId(competition.id)
         }
       } catch (cause) {
         if (!cancelled) {
@@ -68,7 +60,17 @@ export default function GuestHomePage() {
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [])
+
+  if (competitionId) {
+    return (
+      <div className="min-h-screen bg-neutral-50 text-neutral-950">
+        <main className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
+          <GuestTournamentWorkspace competitionId={competitionId} />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-950">
