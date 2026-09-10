@@ -4,6 +4,7 @@ import { useMemo } from "react"
 
 import type { CompetitionEntry } from "@/modules/competition-entries/types"
 import type { MatchRow } from "@/modules/matches/types"
+import type { CompetitionStage } from "@/modules/competition-stages/types"
 
 import {
   buildRoundRobinStandings,
@@ -11,17 +12,22 @@ import {
 } from "@/modules/matches/standings/roundRobinStandings"
 
 import { MatchViewBuilder } from "@/modules/matches/view/MatchViewBuilder"
+import { exportStageResultsCsv } from "@/modules/guest-storage/export"
 
 function signed(value: number) {
   return value > 0 ? `+${value}` : String(value)
 }
 
 export function GuestRoundRobinStandings({
+  stage,
   matches,
   entries,
+  tournamentTitle = "Tournament",
 }: {
+  stage: CompetitionStage
   matches: MatchRow[]
   entries: CompetitionEntry[]
+  tournamentTitle?: string
 }) {
   const matchViewBuilder = useMemo(
     () => new MatchViewBuilder(),
@@ -75,9 +81,10 @@ export function GuestRoundRobinStandings({
           Standings
         </h2>
 
-        <p className="mt-1 text-sm text-neutral-600">
-          {completed} / {views.length} matches completed
-        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-neutral-600">{completed} / {views.length} matches completed</p>
+          <button type="button" onClick={() => exportStageResultsCsv({ tournamentTitle, stage, matches, entries })} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900">Export Results</button>
+        </div>
       </header>
 
       {standings.length === 0 ? (

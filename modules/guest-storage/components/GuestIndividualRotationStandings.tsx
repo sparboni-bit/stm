@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { useMemo } from "react"
 
 import type { CompetitionEntry } from "@/modules/competition-entries/types"
@@ -10,6 +9,7 @@ import {
   buildIndividualRotationStandings,
 } from "@/modules/matches/standings/individualRotationStandings"
 import { MatchViewBuilder } from "@/modules/matches/view/MatchViewBuilder"
+import { exportStageResultsCsv } from "@/modules/guest-storage/export"
 
 function signed(value: number) {
   return value > 0 ? `+${value}` : String(value)
@@ -19,10 +19,12 @@ export function GuestIndividualRotationStandings({
   stage,
   matches,
   entries,
+  tournamentTitle = "Tournament",
 }: {
   stage: CompetitionStage
   matches: MatchRow[]
   entries: CompetitionEntry[]
+  tournamentTitle?: string
 }) {
   const matchViewBuilder = useMemo(
     () => new MatchViewBuilder(),
@@ -56,7 +58,7 @@ export function GuestIndividualRotationStandings({
   ).length
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+    <article className="overflow-hidden border border-neutral-200 bg-white shadow-sm">
       <header className="border-b border-neutral-200 bg-neutral-50 px-4 py-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
           Individual Rotation
@@ -64,25 +66,11 @@ export function GuestIndividualRotationStandings({
         <h2 className="mt-1 text-lg font-bold text-neutral-950">
           {stage.name}
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          {completed} / {views.length} matches completed
-        </p>
-      </header>
-
-      <div className="rounded-2xl bg-neutral-100 px-4 py-4">
-        <div className="flex items-start gap-3">
-          <Image
-            src="/brand/pickleball-arena-logo.png"
-            alt=""
-            width={40}
-            height={40}
-            className="h-10 w-10 shrink-0 object-contain"
-          />
-          <p className="text-sm leading-5 text-neutral-800">
-            <strong>Standings.</strong>{" "}The ranking updates automatically from completed matches. Use it to follow wins, points and score difference while the Stage progresses.
-          </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-neutral-600">{completed} / {views.length} matches completed</p>
+          <button type="button" onClick={() => exportStageResultsCsv({ tournamentTitle, stage, matches, entries })} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900">Export Results</button>
         </div>
-      </div>
+      </header>
 
       {standings.length === 0 ? (
         <div className="px-4 py-8 text-center">
@@ -90,7 +78,7 @@ export function GuestIndividualRotationStandings({
             No standings yet
           </p>
           <p className="mt-2 text-sm text-neutral-600">
-            Generate this Individual Rotation stage to see the individual standings.
+            Generate this Individual Rotation phase to see the individual standings.
           </p>
         </div>
       ) : (

@@ -492,9 +492,9 @@ export function GuestTournamentWorkspace({
                 stage={selectedStage}
                 matches={selectedMatches}
                 entries={document.entries}
-                stageEntries={selectedStageEntries}
                 onChanged={load}
-              />
+                tournamentTitle={document.competition.title}
+            />
             ) : (
               <GuestMatchesManager
                 competitionId={competitionId}
@@ -510,8 +510,10 @@ export function GuestTournamentWorkspace({
           {stageSection === "standings" &&
           selectedStage.stageType === "round_robin" ? (
             <GuestRoundRobinStandings
+              stage={selectedStage}
               matches={selectedMatches}
               entries={document.entries}
+              tournamentTitle={document.competition.title}
             />
           ) : null}
 
@@ -521,6 +523,7 @@ export function GuestTournamentWorkspace({
               stage={selectedStage}
               matches={selectedMatches}
               entries={document.entries}
+              tournamentTitle={document.competition.title}
             />
           ) : null}
 

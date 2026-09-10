@@ -1,32 +1,20 @@
 "use client"
 
-import Image from "next/image"
 import { useMemo, useState } from "react"
 
 import type { CompetitionEntry } from "@/modules/competition-entries/types"
 import type { CompetitionStage } from "@/modules/competition-stages/types"
-import type { CompetitionStageEntry } from "@/modules/competition-stage-entries/types"
 import type { MatchRow, MatchSlot } from "@/modules/matches/types"
+import { exportStageResultsCsv } from "@/modules/guest-storage/export"
 
 import {
   InlineMatchEditor,
   type ScoreFormat,
 } from "./GuestMatchesManager"
 
-function slotName(
-  slot: MatchSlot,
-  entries: Map<string, CompetitionEntry>,
-  seeds: Map<string, number>,
-) {
+function slotName(slot: MatchSlot, entries: Map<string, CompetitionEntry>) {
   if (slot.type === "entry" && slot.entryId) {
-    const name =
-      entries.get(slot.entryId)?.display_name ??
-      "Unknown entry"
-    const seed = seeds.get(slot.entryId)
-
-    return seed
-      ? `${name} (${seed})`
-      : name
+    return entries.get(slot.entryId)?.display_name ?? "Unknown entry"
   }
   if (slot.type === "bye") return "BYE"
   if (slot.type === "winner") return slot.label ?? "Winner of previous match"
@@ -41,71 +29,30 @@ function roundLabel(round: number, maxRound: number) {
   return `Round ${round}`
 }
 
-function scoreRows(match: MatchRow): {
-  a: string[]
-  b: string[]
-} {
-  if (match.status !== "completed") {
-    return { a: [], b: [] }
-  }
-
-  if (
-    match.score.format === "best_of_3" &&
-    Array.isArray(match.score.sets)
-  ) {
-    const a: string[] = []
-    const b: string[] = []
-
-    for (const raw of match.score.sets.slice(0, 3)) {
-      const row =
-        raw as Record<string, unknown>
-
-      a.push(
-        typeof row.a === "number"
-          ? String(row.a)
-          : "–",
-      )
-      b.push(
-        typeof row.b === "number"
-          ? String(row.b)
-          : "–",
-      )
-    }
-
-    return { a, b }
-  }
+function singleSetScoreStrings(match: MatchRow): { a: string; b: string } {
+  const score = match.score as Record<string, unknown>
 
   return {
-    a:
-      typeof match.score.scoreA === "number"
-        ? [String(match.score.scoreA)]
-        : [],
-    b:
-      typeof match.score.scoreB === "number"
-        ? [String(match.score.scoreB)]
-        : [],
+    a: typeof score.scoreA === "number" ? String(score.scoreA) : "",
+    b: typeof score.scoreB === "number" ? String(score.scoreB) : "",
   }
 }
 
-function ScoreValues({
-  values,
-}: {
-  values: string[]
-}) {
-  if (values.length === 0) return null
-
-  return (
-    <span className="flex min-w-[3rem] justify-end gap-2 font-black tabular-nums text-neutral-950">
-      {values.map((value, index) => (
-        <span
-          key={`${value}-${index}`}
-          className="min-w-4 text-right"
-        >
-          {value}
-        </span>
-      ))}
-    </span>
-  )
+function scoreText(match: MatchRow) {
+  if (match.status !== "completed") return null
+  if (match.finish_type === "retirement") return "RET"
+  if (match.score.format === "best_of_3" && Array.isArray(match.score.sets)) {
+    return match.score.sets
+      .map((raw) => {
+        const row = raw as Record<string, unknown>
+        return `${row.a ?? "–"}-${row.b ?? "–"}`
+      })
+      .join("  ")
+  }
+  if (typeof match.score.scoreA === "number" && typeof match.score.scoreB === "number") {
+    return `${match.score.scoreA}-${match.score.scoreB}`
+  }
+  return null
 }
 
 export function GuestEliminationBracket({
@@ -113,34 +60,21 @@ export function GuestEliminationBracket({
   stage,
   matches,
   entries,
-  stageEntries,
   onChanged,
+  readOnly = false,
+  tournamentTitle = "Tournament",
 }: {
   competitionId: string
   stage: CompetitionStage
   matches: MatchRow[]
   entries: CompetitionEntry[]
-  stageEntries: CompetitionStageEntry[]
   onChanged: () => Promise<void>
+  readOnly?: boolean
+  tournamentTitle?: string
 }) {
   const [openMatchId, setOpenMatchId] = useState<string | null>(null)
   const [scoreFormat, setScoreFormat] = useState<ScoreFormat>("single_set")
   const entriesById = useMemo(() => new Map(entries.map((entry) => [entry.id, entry])), [entries])
-  const seedsByEntryId = useMemo(
-    () =>
-      new Map(
-        stageEntries.flatMap((stageEntry) =>
-          stageEntry.status === "active" &&
-          stageEntry.seed !== null
-            ? [[
-                stageEntry.competition_entry_id,
-                stageEntry.seed,
-              ] as const]
-            : [],
-        ),
-      ),
-    [stageEntries],
-  )
 
   const rounds = useMemo(() => {
     const map = new Map<number, MatchRow[]>()
@@ -170,40 +104,31 @@ export function GuestEliminationBracket({
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500">Elimination</p>
           <h2 className="mt-1 text-xl font-black text-neutral-950">Bracket</h2>
           <p className="mt-1 text-sm text-neutral-500">
-            Tap a playable match to enter or undo its result. Winners advance automatically.
+            {readOnly
+              ? "Final bracket view with results and progression."
+              : "Tap a playable match to enter or undo its result. Winners advance automatically."}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 rounded-[12px] bg-neutral-100 p-1">
-          {(["single_set", "best_of_3"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setScoreFormat(mode)}
-              className={[
-                "min-h-9 rounded-[9px] px-3 text-xs font-black",
-                scoreFormat === mode ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500",
-              ].join(" ")}
-            >
-              {mode === "single_set" ? "Single set" : "Best of 3"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-5 rounded-2xl bg-neutral-100 px-4 py-4">
-        <div className="flex items-start gap-3">
-          <Image
-            src="/brand/pickleball-arena-logo.png"
-            alt=""
-            width={40}
-            height={40}
-            className="h-10 w-10 shrink-0 object-contain"
-          />
-          <p className="text-sm leading-5 text-neutral-800">
-            <strong>Bracket.</strong>{" "}
-            Open a playable match to enter or undo its result. Winners advance automatically. Numbered seeds are shown in parentheses next to the player or team name.
-          </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => exportStageResultsCsv({ tournamentTitle, stage, matches, entries })} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900">Export Results</button>
+        {!readOnly ? (
+          <div className="grid grid-cols-2 rounded-[12px] bg-neutral-100 p-1">
+            {(["single_set", "best_of_3"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setScoreFormat(mode)}
+                className={[
+                  "min-h-9 rounded-[9px] px-3 text-xs font-black",
+                  scoreFormat === mode ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500",
+                ].join(" ")}
+              >
+                {mode === "single_set" ? "Single set" : "Best of 3"}
+              </button>
+            ))}
+          </div>
+        ) : null}
         </div>
       </div>
 
@@ -220,18 +145,11 @@ export function GuestEliminationBracket({
 
               <div className="space-y-3">
                 {rows.map((match) => {
-                  const a = slotName(
-                    match.side_a,
-                    entriesById,
-                    seedsByEntryId,
-                  )
-                  const b = slotName(
-                    match.side_b,
-                    entriesById,
-                    seedsByEntryId,
-                  )
+                  const a = slotName(match.side_a, entriesById)
+                  const b = slotName(match.side_b, entriesById)
                   const open = openMatchId === match.id
-                  const scores = scoreRows(match)
+                  const score = scoreText(match)
+                  const singleScores = singleSetScoreStrings(match)
                   const playable = !match.is_bye &&
                     match.side_a.type === "entry" &&
                     match.side_b.type === "entry"
@@ -248,9 +166,11 @@ export function GuestEliminationBracket({
                     >
                       <button
                         type="button"
-                        disabled={!playable && match.status !== "completed"}
-                        onClick={() => setOpenMatchId(open ? null : match.id)}
-                        className="w-full p-3 text-left disabled:cursor-default"
+                        disabled={readOnly || (!playable && match.status !== "completed")}
+                        onClick={() => {
+                          if (!readOnly) setOpenMatchId(open ? null : match.id)
+                        }}
+                        className="w-full p-3 text-left disabled:cursor-default disabled:opacity-100"
                       >
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">
@@ -268,26 +188,27 @@ export function GuestEliminationBracket({
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 text-sm">
-                          <span className={match.winner_side === "A" ? "truncate font-semibold text-emerald-700" : "truncate text-neutral-800"}>
+                        <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm">
+                          <span className={match.winner_side === "A" ? "font-semibold text-emerald-700" : "text-neutral-800"}>
                             {a}
                           </span>
-                          <ScoreValues values={scores.a} />
-
-                          <span className={match.winner_side === "B" ? "truncate font-semibold text-emerald-700" : "truncate text-neutral-800"}>
+                          <span className="font-black text-neutral-950">
+                            {score ? singleScores.a : ""}
+                          </span>
+                          <span className={match.winner_side === "B" ? "font-semibold text-emerald-700" : "text-neutral-800"}>
                             {b}
                           </span>
-                          <ScoreValues values={scores.b} />
+                          <span className="font-black text-neutral-950">
+                            {score ? singleScores.b : ""}
+                          </span>
                         </div>
 
-                        {match.finish_type === "retirement" ? (
-                          <p className="mt-2 text-right text-[10px] font-black uppercase tracking-wide text-neutral-500">
-                            RET
-                          </p>
+                        {score && match.score.format !== "single_set" ? (
+                          <p className="mt-2 text-right text-xs font-black text-neutral-700">{score}</p>
                         ) : null}
                       </button>
 
-                      {open ? (
+                      {open && !readOnly ? (
                         <div className="border-t border-neutral-200 bg-white">
                           <InlineMatchEditor
                             competitionId={competitionId}
