@@ -327,10 +327,6 @@ export function GuestTournamentWorkspace({
   }
 
   if (selectedStage) {
-    const canShowStandings =
-      selectedStage.stageType === "round_robin" ||
-      selectedStage.stageType === "individual_rotation"
-
     return desktopShell(
       <div>
         <div className="sticky top-0 z-30 -mx-5 mb-5 border-b border-neutral-200 bg-white/95 px-5 py-3 backdrop-blur lg:hidden">
@@ -353,11 +349,18 @@ export function GuestTournamentWorkspace({
                       ["matches", "Matches"],
                       ["standings", "Standings"],
                     ]
-                  : [
-                      ["stage", "Setup"],
-                      ["players", "Players"],
-                      ["matches", "Bracket"],
-                    ]
+                  : selectedStage.stageType === "elimination"
+                    ? [
+                        ["stage", "Setup"],
+                        ["players", "Players"],
+                        ["matches", "Bracket"],
+                      ]
+                    : [
+                        ["stage", "Setup"],
+                        ["players", "Players"],
+                        ["matches", "Matches"],
+                        ["standings", "Standings"],
+                      ]
                 ).map(([key, label]) => (
                   <button
                     key={key}
@@ -402,21 +405,6 @@ export function GuestTournamentWorkspace({
               </>
             ) : null}
 
-            {stageSection === "matches" ? (
-              <>
-                <button type="button" onClick={() => openStageSection("stage")} className="inline-flex min-h-10 items-center rounded-full border border-neutral-950 bg-white px-4 text-sm font-bold text-neutral-950">Setup</button>
-                {canShowStandings ? <button type="button" onClick={() => openStageSection("standings")} className="inline-flex min-h-10 items-center rounded-full bg-neutral-950 px-4 text-sm font-bold text-white">Standings</button> : null}
-              </>
-            ) : null}
-
-            {stageSection === "standings" ? (
-              <>
-                <button type="button" onClick={() => openStageSection("matches")} className="inline-flex min-h-10 items-center rounded-full bg-neutral-950 px-4 text-sm font-bold text-white">
-                  Matches
-                </button>
-                <button type="button" onClick={() => openStageSection("stage")} className="inline-flex min-h-10 items-center rounded-full border border-neutral-950 bg-white px-4 text-sm font-bold text-neutral-950">Setup</button>
-              </>
-            ) : null}
           </div>
         </div>
 

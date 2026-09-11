@@ -18,6 +18,7 @@ const statusLabel = {
 } as const
 
 const sectionLabels: Record<string, string> = {
+  overview: "Setup",
   structure: "Setup",
   entries: "Players",
   groups: "Groups",
@@ -96,11 +97,53 @@ export function StageNavigation() {
     ),
   )
 
+  function semanticSectionKey(id: string) {
+    switch (id) {
+      case "overview":
+      case "structure":
+      case "planner":
+        return "setup"
+
+      case "matches":
+      case "play":
+        return "matches"
+
+      case "ranking":
+        return "standings"
+
+      default:
+        return id
+    }
+  }
+
+  const primarySemanticKeys = new Set(
+    primaryMobile.map((step) =>
+      semanticSectionKey(step.id),
+    ),
+  )
+
+  const seenMoreSemanticKeys = new Set<string>()
+
   const moreMobile =
-    workflow.filter(
-      (step) =>
-        !primaryIds.has(step.id),
-    )
+    workflow.filter((step) => {
+      if (primaryIds.has(step.id)) {
+        return false
+      }
+
+      const semanticKey =
+        semanticSectionKey(step.id)
+
+      if (primarySemanticKeys.has(semanticKey)) {
+        return false
+      }
+
+      if (seenMoreSemanticKeys.has(semanticKey)) {
+        return false
+      }
+
+      seenMoreSemanticKeys.add(semanticKey)
+      return true
+    })
 
   return (
     <>

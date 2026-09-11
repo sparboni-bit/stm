@@ -83,7 +83,7 @@ export function GuestRoundRobinStandings({
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-neutral-600">{completed} / {views.length} matches completed</p>
-          <button type="button" onClick={() => exportStageResultsCsv({ tournamentTitle, stage, matches, entries })} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900">Export Results</button>
+          <button type="button" onClick={() => exportStageResultsCsv({ tournamentTitle, stage, matches, entries })} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900">Export results</button>
         </div>
       </header>
 

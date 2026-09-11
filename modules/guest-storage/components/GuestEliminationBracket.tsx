@@ -111,7 +111,20 @@ export function GuestEliminationBracket({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => exportStageResultsCsv({ tournamentTitle, stage, matches, entries })} className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900">Export Results</button>
+          <button
+            type="button"
+            onClick={() => {
+              void exportStageResultsCsv({
+                tournamentTitle,
+                stage,
+                matches,
+                entries,
+              })
+            }}
+            className="inline-flex min-h-10 items-center rounded-full border border-neutral-300 bg-white px-4 text-sm font-bold text-neutral-900"
+          >
+            Export CSV
+          </button>
         {!readOnly ? (
           <div className="grid grid-cols-2 rounded-[12px] bg-neutral-100 p-1">
             {(["single_set", "best_of_3"] as const).map((mode) => (
