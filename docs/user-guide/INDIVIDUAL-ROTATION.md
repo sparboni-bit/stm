@@ -89,6 +89,11 @@ assigned at generation time.
 
 ## 5. Configure the Rotation
 
+![Individual Rotation setup](../media/screenshots/tablet/ir/tablet-ir-01-setup.png)
+
+*Individual Rotation configuration.*
+
+
 Open **Setup**.
 
 Configure the parameters required for the session, including the
@@ -104,6 +109,11 @@ session.
 ------------------------------------------------------------------------
 
 ## 6. Generate the Rotation
+
+![Generated Individual Rotation](../media/screenshots/tablet/ir/tablet-ir-01-rotation.png)
+
+*Example of a generated Individual Rotation schedule.*
+
 
 Select **Generate** when the setup is ready.
 
@@ -155,6 +165,11 @@ claiming that every possible combination will be unique.
 ------------------------------------------------------------------------
 
 ## 8. Play the Matches
+
+![Individual Rotation matches on smartphone](../media/screenshots/phone/ir/phone-ir-06-matches.png)
+
+*Courtside management of Individual Rotation matches.*
+
 
 Open **Matches** to manage the generated rotation.
 
@@ -208,6 +223,11 @@ allowing the session to continue naturally.
 ------------------------------------------------------------------------
 
 ## 11. Individual Standings
+
+![Individual Rotation standings](../media/screenshots/tablet/ir/tablet-ir-01-standing.png)
+
+*Individual standings after recorded matches.*
+
 
 Open **Standings** to follow the competition at player level.
 

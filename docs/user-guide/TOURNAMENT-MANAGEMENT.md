@@ -25,6 +25,11 @@ stages.
 
 ## 2. Create a Tournament
 
+![Tournament home on tablet](../media/screenshots/tablet/common/tablet-common-01-home.png)
+
+*Tournament management on a tablet.*
+
+
 From the Home screen, create a new tournament.
 
 Enter the basic information required by the application and give the
@@ -55,6 +60,11 @@ size.
 ------------------------------------------------------------------------
 
 ## 4. Roster
+
+![Tournament roster on tablet](../media/screenshots/tablet/common/tablet-common-02-roster.png)
+
+*Roster management using the wider tablet layout.*
+
 
 The **Roster** contains the participants available to the tournament.
 

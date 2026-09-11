@@ -57,6 +57,11 @@ standings or bracket progression.
 
 ## 4. Entering a Result
 
+![Best of 3 match management](../media/screenshots/tablet/el/tablet-el-03-matches.png)
+
+*Best of 3 score entry within an Elimination bracket.*
+
+
 Open the required match and enter the score for the two sides.
 
 Before saving, verify that the score belongs to the correct

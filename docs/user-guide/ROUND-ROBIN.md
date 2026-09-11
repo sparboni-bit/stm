@@ -80,6 +80,11 @@ Before generating the stage, verify that:
 
 ## 5. Configure the Groups
 
+![Round Robin setup](../media/screenshots/tablet/rr/tablet-rr-00-setup.png)
+
+*Round Robin stage configuration.*
+
+
 Open **Setup** and configure the Round Robin structure.
 
 The available options depend on the competition configuration and may
@@ -114,6 +119,11 @@ The generated structure becomes the operational basis for the stage.
 
 ## 7. Manage Matches
 
+![Round Robin matches](../media/screenshots/tablet/rr/tablet-rr-03-matches.png)
+
+*Managing Round Robin matches on a tablet.*
+
+
 Open **Matches** to run the Round Robin stage.
 
 Each match identifies the two competing entries and its current state.
@@ -144,6 +154,11 @@ available in the match interface rather than creating a duplicate match.
 ------------------------------------------------------------------------
 
 ## 9. Standings
+
+![Round Robin standings](../media/screenshots/phone/rr/phone-rr-04-standings.png)
+
+*Group standings on a smartphone.*
+
 
 Open **Standings** to follow the current ranking within each group.
 

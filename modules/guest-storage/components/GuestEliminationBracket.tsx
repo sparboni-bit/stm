@@ -66,6 +66,40 @@ function scoreText(match: MatchRow) {
   return null
 }
 
+function completedWinnerSide(match: MatchRow): "A" | "B" | null {
+  if (match.status !== "completed") return null
+  if (match.winner_side === "A" || match.winner_side === "B") return match.winner_side
+
+  if (match.finish_type === "retirement") {
+    if (match.retired_side === "A") return "B"
+    if (match.retired_side === "B") return "A"
+  }
+
+  if (match.score.format === "best_of_3" && Array.isArray(match.score.sets)) {
+    let aSets = 0
+    let bSets = 0
+
+    for (const raw of match.score.sets) {
+      const row = raw as Record<string, unknown>
+      const a = Number(row.a)
+      const b = Number(row.b)
+      if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) continue
+      if (a > b) aSets += 1
+      else bSets += 1
+    }
+
+    if (aSets > bSets) return "A"
+    if (bSets > aSets) return "B"
+  }
+
+  if (typeof match.score.scoreA === "number" && typeof match.score.scoreB === "number") {
+    if (match.score.scoreA > match.score.scoreB) return "A"
+    if (match.score.scoreB > match.score.scoreA) return "B"
+  }
+
+  return null
+}
+
 export function GuestEliminationBracket({
   competitionId,
   stage,
@@ -188,6 +222,7 @@ export function GuestEliminationBracket({
                   const b = slotName(match.side_b, entriesById, seedsByEntryId)
                   const open = openMatchId === match.id
                   const score = scoreText(match)
+                  const winner = completedWinnerSide(match)
                   const singleScores = singleSetScoreStrings(match)
                   const playable = !match.is_bye &&
                     match.side_a.type === "entry" &&
@@ -228,13 +263,13 @@ export function GuestEliminationBracket({
                         </div>
 
                         <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-sm">
-                          <span className={match.winner_side === "A" ? "font-semibold text-emerald-700" : "text-neutral-800"}>
+                          <span className={winner === "A" ? "font-bold text-emerald-700" : "text-neutral-800"}>
                             {a}
                           </span>
                           <span className="font-black text-neutral-950">
                             {score ? singleScores.a : ""}
                           </span>
-                          <span className={match.winner_side === "B" ? "font-semibold text-emerald-700" : "text-neutral-800"}>
+                          <span className={winner === "B" ? "font-bold text-emerald-700" : "text-neutral-800"}>
                             {b}
                           </span>
                           <span className="font-black text-neutral-950">
@@ -255,6 +290,8 @@ export function GuestEliminationBracket({
                             entriesById={entriesById}
                             scoreFormat={scoreFormat}
                             onChanged={onChanged}
+                            onSaved={() => setOpenMatchId(null)}
+                            hideSummary
                           />
                         </div>
                       ) : null}

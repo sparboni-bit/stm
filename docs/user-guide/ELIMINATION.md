@@ -92,6 +92,11 @@ The assigned entries form the basis of the generated bracket.
 
 ## 5. Configure Seeds
 
+![Elimination seed configuration](../media/screenshots/tablet/el/tablet-el-01-seeds.png)
+
+*Assigning seeded participants before bracket generation.*
+
+
 Seeds allow selected participants to be placed deliberately within the
 bracket rather than relying entirely on unseeded placement.
 
@@ -134,6 +139,11 @@ Review the complete bracket before starting play.
 ------------------------------------------------------------------------
 
 ## 7. Understanding the Bracket
+
+![Elimination bracket and Best of 3 scoring](../media/screenshots/tablet/el/tablet-el-03-matches.png)
+
+*Seeded semifinalists, final progression, and Best of 3 result entry.*
+
 
 Each match occupies a defined position in the elimination structure.
 

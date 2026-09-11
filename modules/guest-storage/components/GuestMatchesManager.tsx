@@ -412,12 +412,16 @@ export function InlineMatchEditor({
   entriesById,
   scoreFormat,
   onChanged,
+  onSaved,
+  hideSummary = false,
 }: {
   competitionId: string
   match: MatchRow
   entriesById: Map<string, CompetitionEntry>
   scoreFormat: ScoreFormat
   onChanged: () => Promise<void>
+  onSaved?: () => void
+  hideSummary?: boolean
 }) {
   const a = slotName(match.side_a, entriesById)
   const b = slotName(match.side_b, entriesById)
@@ -462,7 +466,11 @@ export function InlineMatchEditor({
     setSets(stored)
   }, [match])
 
-  async function run(operation: () => Promise<void>, success: string) {
+  async function run(
+    operation: () => Promise<void>,
+    success: string,
+    collapseAfterSuccess = false,
+  ) {
     setWorking(true)
     setError(null)
     setMessage(null)
@@ -470,6 +478,10 @@ export function InlineMatchEditor({
       await operation()
       setMessage(success)
       await onChanged()
+      if (collapseAfterSuccess) {
+        setExpanded(false)
+        onSaved?.()
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Operation failed.")
     } finally {
@@ -514,6 +526,7 @@ export function InlineMatchEditor({
           sets: resultSets,
         }),
         "Retirement saved.",
+        true,
       )
       return
     }
@@ -527,6 +540,7 @@ export function InlineMatchEditor({
           scoreB: parseScore(singleB, "Score B"),
         }),
         "Result saved.",
+        true,
       )
       return
     }
@@ -538,6 +552,7 @@ export function InlineMatchEditor({
         sets: completedSets(),
       }),
       "Result saved.",
+      true,
     )
   }
 
@@ -546,47 +561,43 @@ export function InlineMatchEditor({
   }
 
   if (match.status === "completed") {
+    const completedDetails = (
+      <div className={hideSummary ? "bg-white p-4" : "border-t border-neutral-200 bg-neutral-50 p-4"}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-black text-neutral-400">Match #{match.visible_match_number ?? match.match_number}{match.court_label ? ` · ${match.court_label}` : ""}</span>
+          <span className={["rounded-md border px-2 py-1 text-[9px] font-black", statusClasses(match.status)].join(" ")}>{statusLabel(match.status)}</span>
+        </div>
+        <div className="mt-3 grid gap-2 text-sm">
+          <div className="flex items-center justify-between gap-3"><span className={winner === "A" ? "font-bold text-emerald-700" : "text-neutral-950"}>{a}</span><span className="font-mono font-black">{compactSideScore(match, "A")}</span></div>
+          <div className="flex items-center justify-between gap-3"><span className={winner === "B" ? "font-bold text-emerald-700" : "text-neutral-950"}>{b}</span><span className="font-mono font-black">{compactSideScore(match, "B")}</span></div>
+        </div>
+        {match.finish_type === "retirement" ? <div className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700">Retirement</div> : null}
+        <button type="button" disabled={working} onClick={() => void run(() => undoGuestMatchResult({ competitionId, matchId: match.id }), "Result removed.")} className="mt-4 min-h-11 w-full rounded-lg border border-amber-400 bg-amber-50 px-4 text-sm font-bold text-amber-700 disabled:opacity-50">{working ? "Working..." : "Undo result"}</button>
+        {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
+        {message ? <p className="mt-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
+      </div>
+    )
+
+    if (hideSummary) return completedDetails
+
     return (
       <div className="bg-white">
         <button type="button" onClick={() => setExpanded((value) => !value)} className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3 text-left">
           <span className="text-xs font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-neutral-800">{a}</span>
-            <span className="block truncate text-sm font-medium text-neutral-800">{b}</span>
+            <span className={["block truncate text-sm", winner === "A" ? "font-bold text-emerald-700" : "font-medium text-neutral-800"].join(" ")}>{a}</span>
+            <span className={["block truncate text-sm", winner === "B" ? "font-bold text-emerald-700" : "font-medium text-neutral-800"].join(" ")}>{b}</span>
           </span>
           <span className="font-mono text-sm font-black text-neutral-950">{scoreLabel(match)}</span>
           <span className="text-lg font-black text-neutral-400">{expanded ? "−" : "+"}</span>
         </button>
-        {expanded ? (
-          <div className="border-t border-neutral-200 bg-neutral-50 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-black text-neutral-400">Match #{match.visible_match_number ?? match.match_number}{match.court_label ? ` · ${match.court_label}` : ""}</span>
-              <span className={["rounded-md border px-2 py-1 text-[9px] font-black", statusClasses(match.status)].join(" ")}>{statusLabel(match.status)}</span>
-            </div>
-            <div className="mt-3 grid gap-2 text-sm">
-              <div className="flex items-center justify-between gap-3"><span className={winner === "A" ? "font-bold text-emerald-700" : "text-neutral-950"}>{a}</span><span className="font-mono font-black">{compactSideScore(match, "A")}</span></div>
-              <div className="flex items-center justify-between gap-3"><span className={winner === "B" ? "font-bold text-emerald-700" : "text-neutral-950"}>{b}</span><span className="font-mono font-black">{compactSideScore(match, "B")}</span></div>
-            </div>
-            {match.finish_type === "retirement" ? <div className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700">Retirement</div> : null}
-            <button type="button" disabled={working} onClick={() => void run(() => undoGuestMatchResult({ competitionId, matchId: match.id }), "Result removed.")} className="mt-4 min-h-11 w-full rounded-lg border border-amber-400 bg-amber-50 px-4 text-sm font-bold text-amber-700 disabled:opacity-50">{working ? "Working..." : "Undo result"}</button>
-            {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
-            {message ? <p className="mt-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
-          </div>
-        ) : null}
+        {expanded ? completedDetails : null}
       </div>
     )
   }
 
-  return (
-    <div className="bg-white">
-      <button type="button" onClick={() => setExpanded((value) => !value)} className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3 text-left">
-        <span className="text-xs font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span>
-        <span className="min-w-0"><span className="block truncate text-sm font-medium text-neutral-800">{a}</span><span className="block truncate text-sm font-medium text-neutral-800">{b}</span></span>
-        <span className={["rounded-md border px-2 py-1 text-[9px] font-black", statusClasses(match.status)].join(" ")}>{statusLabel(match.status)}</span>
-        <span className="text-lg font-black text-neutral-400">{expanded ? "−" : "+"}</span>
-      </button>
-      {expanded ? (
-      <form onSubmit={(event) => void save(event)} className="border-t border-neutral-200 bg-neutral-50 p-4">
+  const editorForm = (
+      <form onSubmit={(event) => void save(event)} className={hideSummary ? "bg-white p-4" : "border-t border-neutral-200 bg-neutral-50 p-4"}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="text-xs font-black text-neutral-400">Match #{match.visible_match_number ?? match.match_number}</div>
@@ -644,7 +655,19 @@ export function InlineMatchEditor({
       {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
       {message ? <p className="mt-2 text-xs font-semibold text-emerald-700">{message}</p> : null}
       </form>
-      ) : null}
+  )
+
+  if (hideSummary) return editorForm
+
+  return (
+    <div className="bg-white">
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3 text-left">
+        <span className="text-xs font-black text-neutral-400">#{match.visible_match_number ?? match.match_number}</span>
+        <span className="min-w-0"><span className="block truncate text-sm font-medium text-neutral-800">{a}</span><span className="block truncate text-sm font-medium text-neutral-800">{b}</span></span>
+        <span className={["rounded-md border px-2 py-1 text-[9px] font-black", statusClasses(match.status)].join(" ")}>{statusLabel(match.status)}</span>
+        <span className="text-lg font-black text-neutral-400">{expanded ? "−" : "+"}</span>
+      </button>
+      {expanded ? editorForm : null}
     </div>
   )
 }

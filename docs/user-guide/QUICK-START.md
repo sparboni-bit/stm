@@ -35,6 +35,11 @@ The currently supported stage formats are:
 
 ## 2. Create a Tournament
 
+![Tournament home screen](../media/screenshots/phone/common/phone-common-01-home.png)
+
+*Tournament home screen.*
+
+
 From the Home screen, create a new tournament and enter its basic
 information.
 
@@ -46,6 +51,11 @@ stages.
 ------------------------------------------------------------------------
 
 ## 3. Build the Roster
+
+![Tournament roster](../media/screenshots/phone/common/phone-common-03-roster.png)
+
+*Adding and reviewing tournament participants.*
+
 
 Open **Roster** and add the players who will participate in the
 tournament.
@@ -92,6 +102,11 @@ progress to the following rounds until the final.
 ------------------------------------------------------------------------
 
 ## 5. Configure the Stage
+
+![Individual Rotation setup example](../media/screenshots/phone/ir/phone-ir-03-setup.png)
+
+*Example of stage configuration before generation.*
+
 
 Open **Setup** and configure the options available for the selected
 stage format.
