@@ -82,9 +82,15 @@ function finalizeDocument(
 ): GuestTournamentDocument {
   const now = new Date().toISOString()
   const nonBye = matches.filter((match) => !match.is_bye)
-  const allCompleted =
+  const allMatchesCompleted =
     nonBye.length > 0 &&
     nonBye.every((match) => match.status === "completed")
+  const hasOpenIndividualRotation = document.stages.some(
+    (stage) =>
+      stage.stageType === "individual_rotation" &&
+      stage.status !== "completed",
+  )
+  const allCompleted = allMatchesCompleted && !hasOpenIndividualRotation
   const anyStarted = matches.some(
     (match) => match.status === "on_court" || match.status === "completed",
   )
@@ -102,11 +108,19 @@ function finalizeDocument(
     )
     return {
       ...stage,
-      status: stageCompleted
-        ? "completed"
-        : stageRunning
-          ? "running"
-          : stage.status,
+      // Individual Rotation stays open after the currently generated
+      // matches are completed: the organizer may append another round.
+      // It is completed only through an explicit completion action.
+      status:
+        stage.stageType === "individual_rotation"
+          ? stageRunning
+            ? "running"
+            : stage.status
+          : stageCompleted
+            ? "completed"
+            : stageRunning
+              ? "running"
+              : stage.status,
       updatedAt: now,
     }
   })

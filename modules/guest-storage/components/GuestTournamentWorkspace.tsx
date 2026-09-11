@@ -480,6 +480,7 @@ export function GuestTournamentWorkspace({
                 stage={selectedStage}
                 matches={selectedMatches}
                 entries={document.entries}
+                stageEntries={selectedStageEntries}
                 onChanged={load}
                 tournamentTitle={document.competition.title}
             />

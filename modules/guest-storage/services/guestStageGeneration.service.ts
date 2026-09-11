@@ -1518,7 +1518,9 @@ export async function addGuestIndividualRotationRound(
     stage.status !==
       "generated" &&
     stage.status !==
-      "running"
+      "running" &&
+    stage.status !==
+      "completed"
   ) {
     throw new Error(
       "A round can only be added after generation.",
@@ -1821,12 +1823,19 @@ export async function addGuestIndividualRotationRound(
     touchGuestDocument({
       ...document,
 
+      competition: {
+        ...document.competition,
+        status: "running",
+      },
+
       stages:
         document.stages.map(
           (item) =>
             item.id === stage.id
               ? {
                   ...item,
+
+                  status: "running",
 
                   metadata: {
                     ...(item.metadata ??

@@ -274,7 +274,7 @@ export function GuestMatchesManager({
             onClick={() => void handleAddRound()}
             disabled={
               addRoundWorking ||
-              (activeStage.status !== "generated" && activeStage.status !== "running")
+              (activeStage.status !== "generated" && activeStage.status !== "running" && activeStage.status !== "completed")
             }
             className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-xl bg-slate-950 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
           >

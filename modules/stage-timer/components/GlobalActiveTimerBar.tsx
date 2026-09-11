@@ -6,6 +6,7 @@ import { startWebTimerAlarm, stopWebTimerAlarm } from "@/modules/stage-timer/ala
 import {
   ACTIVE_STAGE_TIMER_EVENT,
   ACTIVE_STAGE_TIMER_STORAGE_KEY,
+  clearPersistentStageTimer,
   getPersistentTimerRemaining,
   readPersistentStageTimer,
   type PersistentStageTimerState,
@@ -87,6 +88,11 @@ export function GlobalActiveTimerBar() {
 
   if (!timer) return null
 
+  const closeAlwaysOn = () => {
+    stopWebTimerAlarm()
+    clearPersistentStageTimer()
+  }
+
   const statusLabel =
     timer.status === "running"
       ? "RUNNING"
@@ -123,6 +129,16 @@ export function GlobalActiveTimerBar() {
         >
           Open
         </a>
+
+        <button
+          type="button"
+          onClick={closeAlwaysOn}
+          aria-label="Close Always On timer"
+          title="Close Always On timer"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-300 bg-white text-xl font-black leading-none text-neutral-700 hover:bg-neutral-100"
+        >
+          ×
+        </button>
       </div>
     </div>
   )

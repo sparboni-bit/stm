@@ -1,4 +1,4 @@
-package com.pickleballarena.app;
+package com.pickleballarena.tournament;
 
 import com.getcapacitor.BridgeActivity;
 

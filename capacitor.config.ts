@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli"
 
 const config: CapacitorConfig = {
-  appId: "com.pickleballarena.app",
-  appName: "Pickleball Arena",
+  appId: "com.pickleballarena.tournament",
+  appName: "Pickleball Arena Tournament",
   webDir: "out",
 }
 

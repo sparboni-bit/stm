@@ -12,9 +12,20 @@ import {
   type ScoreFormat,
 } from "./GuestMatchesManager"
 
-function slotName(slot: MatchSlot, entries: Map<string, CompetitionEntry>) {
+type StageSeedEntry = {
+  competition_entry_id: string
+  seed: number | null
+}
+
+function slotName(
+  slot: MatchSlot,
+  entries: Map<string, CompetitionEntry>,
+  seedsByEntryId: Map<string, number | null>,
+) {
   if (slot.type === "entry" && slot.entryId) {
-    return entries.get(slot.entryId)?.display_name ?? "Unknown entry"
+    const name = entries.get(slot.entryId)?.display_name ?? "Unknown entry"
+    const seed = seedsByEntryId.get(slot.entryId) ?? null
+    return seed !== null ? `${name} (${seed})` : name
   }
   if (slot.type === "bye") return "BYE"
   if (slot.type === "winner") return slot.label ?? "Winner of previous match"
@@ -60,6 +71,7 @@ export function GuestEliminationBracket({
   stage,
   matches,
   entries,
+  stageEntries,
   onChanged,
   readOnly = false,
   tournamentTitle = "Tournament",
@@ -68,13 +80,27 @@ export function GuestEliminationBracket({
   stage: CompetitionStage
   matches: MatchRow[]
   entries: CompetitionEntry[]
+  stageEntries: StageSeedEntry[]
   onChanged: () => Promise<void>
   readOnly?: boolean
   tournamentTitle?: string
 }) {
   const [openMatchId, setOpenMatchId] = useState<string | null>(null)
   const [scoreFormat, setScoreFormat] = useState<ScoreFormat>("single_set")
-  const entriesById = useMemo(() => new Map(entries.map((entry) => [entry.id, entry])), [entries])
+  const entriesById = useMemo(
+    () => new Map(entries.map((entry) => [entry.id, entry])),
+    [entries],
+  )
+  const seedsByEntryId = useMemo(
+    () =>
+      new Map(
+        stageEntries.map((entry) => [
+          entry.competition_entry_id,
+          entry.seed,
+        ]),
+      ),
+    [stageEntries],
+  )
 
   const rounds = useMemo(() => {
     const map = new Map<number, MatchRow[]>()
@@ -158,8 +184,8 @@ export function GuestEliminationBracket({
 
               <div className="space-y-3">
                 {rows.map((match) => {
-                  const a = slotName(match.side_a, entriesById)
-                  const b = slotName(match.side_b, entriesById)
+                  const a = slotName(match.side_a, entriesById, seedsByEntryId)
+                  const b = slotName(match.side_b, entriesById, seedsByEntryId)
                   const open = openMatchId === match.id
                   const score = scoreText(match)
                   const singleScores = singleSetScoreStrings(match)
