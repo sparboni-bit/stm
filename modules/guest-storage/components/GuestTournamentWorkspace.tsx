@@ -268,8 +268,30 @@ export function GuestTournamentWorkspace({
                   ))}
                 </div>
               ) : null}
+
+              <div className="mt-8 border-t border-neutral-200 pt-5">
+                <Link
+                  href="/privacy"
+                  className="text-xs font-semibold text-neutral-500 underline underline-offset-2 hover:text-neutral-950"
+                >
+                  Privacy Policy
+                </Link>
+                <p className="mt-2 text-[10px] leading-4 text-neutral-400">
+                  Pickleball Arena Tournament Manager
+                </p>
+              </div>
             </aside>
-            <main className="min-w-0 px-5 py-7 sm:px-7 lg:px-10 lg:py-9">{content}</main>
+            <main className="min-w-0 px-5 py-7 sm:px-7 lg:px-10 lg:py-9">
+              {content}
+              <footer className="mt-10 border-t border-neutral-200 pt-4 text-center lg:hidden">
+                <Link
+                  href="/privacy"
+                  className="text-xs font-semibold text-neutral-500 underline underline-offset-2"
+                >
+                  Privacy Policy
+                </Link>
+              </footer>
+            </main>
           </div>
         </div>
       </div>

@@ -56,6 +56,7 @@ function copyRootProject() {
 function createMobileAppTree() {
   mkdirSync(mobileAppDir, { recursive: true })
   mkdirSync(resolve(mobileAppDir, "guest"), { recursive: true })
+  mkdirSync(resolve(mobileAppDir, "privacy"), { recursive: true })
 
   cpSync(
     resolve(sourceAppDir, "layout.tsx"),
@@ -78,6 +79,12 @@ function createMobileAppTree() {
     resolve(mobileAppDir, "guest", "page.tsx"),
     guestPage,
     "utf8",
+  )
+
+  cpSync(
+    resolve(sourceAppDir, "privacy", "page.tsx"),
+    resolve(mobileAppDir, "privacy", "page.tsx"),
+    { force: true },
   )
 
   // Mobile V1:
