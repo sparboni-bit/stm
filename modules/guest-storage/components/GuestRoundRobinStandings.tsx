@@ -87,6 +87,16 @@ export function GuestRoundRobinStandings({
         </div>
       </header>
 
+      {standings.length >
+      0 ? (
+        <p className="text-xs leading-5 text-neutral-500">
+          Ranking: wins, points difference, points for,
+          player name. Only completed matches contribute
+          to the totals.
+        </p>
+      ) : null}
+
+
       {standings.length === 0 ? (
         <div className="border border-dashed border-neutral-300 bg-white px-4 py-8 text-center">
           <h3 className="font-semibold text-neutral-950">
@@ -118,14 +128,14 @@ export function GuestRoundRobinStandings({
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] border-collapse text-sm">
+                  <table className="w-full min-w-[420px] border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wide text-neutral-500">
-                        <th className="sticky left-0 z-30 w-10 min-w-10 bg-white px-2 py-3 text-center lg:static">
+                        <th className="sticky left-0 z-30 w-8 min-w-8 bg-white px-1 py-3 text-center lg:static">
                           Pos
                         </th>
 
-                        <th className="sticky left-10 z-30 min-w-[150px] bg-white px-3 py-3 text-left shadow-[6px_0_8px_-8px_rgba(0,0,0,0.35)] lg:static lg:shadow-none">
+                        <th className="sticky left-8 z-30 w-[112px] min-w-[112px] max-w-[112px] bg-white px-2 py-3 text-left shadow-[6px_0_8px_-8px_rgba(0,0,0,0.35)] lg:static lg:shadow-none">
                           Player
                         </th>
 
@@ -167,19 +177,19 @@ export function GuestRoundRobinStandings({
                             }
                             className="border-b border-neutral-100 last:border-b-0"
                           >
-                            <td className="sticky left-0 z-20 bg-white px-2 py-3 text-center font-semibold text-neutral-500 lg:static">
+                            <td className="sticky left-0 z-20 w-8 min-w-8 bg-white px-1 py-3 text-center font-semibold text-neutral-500 lg:static">
                               {index +
                                 1}
                             </td>
 
-                            <td className="sticky left-10 z-20 bg-white px-3 py-3 shadow-[6px_0_8px_-8px_rgba(0,0,0,0.35)] lg:static lg:shadow-none">
-                              <div className="flex items-center gap-2">
+                            <td className="sticky left-8 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-white px-2 py-3 shadow-[6px_0_8px_-8px_rgba(0,0,0,0.35)] lg:static lg:shadow-none">
+                              <div className="flex min-w-0 items-center gap-1">
                                 <span
                                   className={
                                     index ===
                                     0
-                                      ? "font-bold text-neutral-950"
-                                      : "font-medium text-neutral-900"
+                                      ? "block min-w-0 truncate font-bold text-neutral-950"
+                                      : "block min-w-0 truncate font-medium text-neutral-900"
                                   }
                                 >
                                   {
@@ -199,37 +209,37 @@ export function GuestRoundRobinStandings({
                               </div>
                             </td>
 
-                            <td className="px-2 py-3 text-center">
+                            <td className="px-1 py-3 text-center">
                               {
                                 row.played
                               }
                             </td>
 
-                            <td className="px-2 py-3 text-center font-bold">
+                            <td className="px-1 py-3 text-center font-bold">
                               {
                                 row.won
                               }
                             </td>
 
-                            <td className="px-2 py-3 text-center">
+                            <td className="px-1 py-3 text-center">
                               {
                                 row.lost
                               }
                             </td>
 
-                            <td className="px-2 py-3 text-center">
+                            <td className="px-1 py-3 text-center">
                               {
                                 row.pointsFor
                               }
                             </td>
 
-                            <td className="px-2 py-3 text-center">
+                            <td className="px-1 py-3 text-center">
                               {
                                 row.pointsAgainst
                               }
                             </td>
 
-                            <td className="px-2 py-3 text-center font-semibold">
+                            <td className="px-1 py-3 text-center font-semibold">
                               {signed(
                                 row.diff,
                               )}
@@ -246,14 +256,6 @@ export function GuestRoundRobinStandings({
         </div>
       )}
 
-      {standings.length >
-      0 ? (
-        <p className="text-xs leading-5 text-neutral-500">
-          Ranking: wins, points difference, points for,
-          player name. Only completed matches contribute
-          to the totals.
-        </p>
-      ) : null}
     </section>
   )
 }

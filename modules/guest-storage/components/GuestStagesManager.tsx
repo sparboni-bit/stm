@@ -124,6 +124,13 @@ export function GuestStagesManager({
     [stageType, stages],
   )
 
+  const rosterPlayerCount = roster.filter(
+    (entry) =>
+      entry.entry_type === "player" &&
+      entry.metadata?.hiddenFromRoster !== true,
+  ).length
+  const canCreateStage = rosterPlayerCount > 0
+
 
   useEffect(() => {
     if (!newStageId) return
@@ -166,6 +173,11 @@ export function GuestStagesManager({
 
   function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!canCreateStage) {
+      setError("Add players to the roster before creating a stage.")
+      return
+    }
 
     const stageName = name.trim() || suggestedName
 
@@ -232,7 +244,28 @@ export function GuestStagesManager({
           </div>
         ) : null}
 
-        {adding ? (
+        {adding && !canCreateStage ? (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:max-w-[620px] sm:p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              New stage
+            </p>
+            <h2 className="mt-1 text-lg font-black text-neutral-950">
+              Add players first
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Add players to the tournament roster before creating a stage.
+            </p>
+            {onOpenRoster ? (
+              <button
+                type="button"
+                onClick={onOpenRoster}
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-950 bg-[var(--arena-yellow)] px-4 text-sm font-black text-[var(--arena-black)]"
+              >
+                Build player list
+              </button>
+            ) : null}
+          </div>
+        ) : adding ? (
           <form
             onSubmit={handleCreate}
             className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:max-w-[620px] sm:p-5"
@@ -305,7 +338,7 @@ export function GuestStagesManager({
 
         <p className="mt-4 text-sm text-slate-500">
           <strong className="font-bold text-neutral-950">
-            {roster.filter((entry) => entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true).length} player{roster.filter((entry) => entry.entry_type === "player" && entry.metadata?.hiddenFromRoster !== true).length === 1 ? "" : "s"}
+            {rosterPlayerCount} player{rosterPlayerCount === 1 ? "" : "s"}
           </strong>{" "}
           available in the roster.
           {onOpenRoster ? (

@@ -72,6 +72,12 @@ export function GuestIndividualRotationStandings({
         </div>
       </header>
 
+      {standings.length > 0 ? (
+        <p className="border-t border-neutral-100 px-4 py-3 text-xs leading-5 text-neutral-500">
+          Ranking: wins, points difference, points for, player name. Only completed matches contribute to the totals.
+        </p>
+      ) : null}
+
       {standings.length === 0 ? (
         <div className="px-4 py-8 text-center">
           <p className="font-semibold text-neutral-950">
@@ -83,18 +89,18 @@ export function GuestIndividualRotationStandings({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
+          <table className="w-full min-w-[440px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-neutral-200 text-[10px] font-bold uppercase tracking-wide text-neutral-500">
-                <th className="sticky left-0 z-20 w-10 bg-neutral-50 px-2 py-3 text-center">Pos</th>
-                <th className="sticky left-10 z-20 min-w-[170px] bg-neutral-50 px-3 py-3 text-left shadow-[4px_0_6px_-6px_rgba(0,0,0,0.35)]">Player</th>
-                <th className="w-10 px-2 py-3 text-center">P</th>
-                <th className="w-10 px-2 py-3 text-center">W</th>
-                <th className="w-10 px-2 py-3 text-center">D</th>
-                <th className="w-10 px-2 py-3 text-center">L</th>
-                <th className="w-12 px-2 py-3 text-center">PF</th>
-                <th className="w-12 px-2 py-3 text-center">PA</th>
-                <th className="w-12 px-2 py-3 text-center">+/-</th>
+                <th className="sticky left-0 z-20 w-8 min-w-8 bg-neutral-50 px-1 py-3 text-center">Pos</th>
+                <th className="sticky left-8 z-20 w-[112px] min-w-[112px] max-w-[112px] bg-neutral-50 px-2 py-3 text-left shadow-[4px_0_6px_-6px_rgba(0,0,0,0.35)]">Player</th>
+                <th className="w-9 px-1 py-3 text-center">P</th>
+                <th className="w-9 px-1 py-3 text-center">W</th>
+                <th className="w-9 px-1 py-3 text-center">D</th>
+                <th className="w-9 px-1 py-3 text-center">L</th>
+                <th className="w-10 px-1 py-3 text-center">PF</th>
+                <th className="w-10 px-1 py-3 text-center">PA</th>
+                <th className="w-10 px-1 py-3 text-center">+/-</th>
               </tr>
             </thead>
             <tbody>
@@ -103,19 +109,19 @@ export function GuestIndividualRotationStandings({
                   key={row.entryId}
                   className="border-b border-neutral-100 last:border-b-0"
                 >
-                  <td className="sticky left-0 z-10 bg-white px-2 py-3 text-center font-semibold text-neutral-500">
+                  <td className="sticky left-0 z-10 w-8 min-w-8 bg-white px-1 py-3 text-center font-semibold text-neutral-500">
                     {index + 1}
                   </td>
-                  <td className="sticky left-10 z-10 min-w-[170px] bg-white px-3 py-3 font-medium text-neutral-950 shadow-[4px_0_6px_-6px_rgba(0,0,0,0.35)]">
+                  <td className="sticky left-8 z-10 w-[112px] min-w-[112px] max-w-[112px] truncate bg-white px-2 py-3 font-medium text-neutral-950 shadow-[4px_0_6px_-6px_rgba(0,0,0,0.35)]">
                     {row.displayName}
                   </td>
-                  <td className="px-2 py-3 text-center">{row.played}</td>
-                  <td className="px-2 py-3 text-center font-bold">{row.won}</td>
-                  <td className="px-2 py-3 text-center">{row.drawn}</td>
-                  <td className="px-2 py-3 text-center">{row.lost}</td>
-                  <td className="px-2 py-3 text-center">{row.pointsFor}</td>
-                  <td className="px-2 py-3 text-center">{row.pointsAgainst}</td>
-                  <td className="px-2 py-3 text-center font-semibold">
+                  <td className="px-1 py-3 text-center">{row.played}</td>
+                  <td className="px-1 py-3 text-center font-bold">{row.won}</td>
+                  <td className="px-1 py-3 text-center">{row.drawn}</td>
+                  <td className="px-1 py-3 text-center">{row.lost}</td>
+                  <td className="px-1 py-3 text-center">{row.pointsFor}</td>
+                  <td className="px-1 py-3 text-center">{row.pointsAgainst}</td>
+                  <td className="px-1 py-3 text-center font-semibold">
                     {signed(row.diff)}
                   </td>
                 </tr>
@@ -125,11 +131,7 @@ export function GuestIndividualRotationStandings({
         </div>
       )}
 
-      {standings.length > 0 ? (
-        <p className="border-t border-neutral-100 px-4 py-3 text-xs leading-5 text-neutral-500">
-          Ranking: wins, points difference, points for, player name. Only completed matches contribute to the totals.
-        </p>
-      ) : null}
+
     </article>
   )
 }

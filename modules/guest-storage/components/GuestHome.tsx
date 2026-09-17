@@ -13,6 +13,10 @@ export function GuestHome({
   onCreateStage: () => void
   onBuildRoster: () => void
 }) {
+  const hasPlayers = playerCount > 0
+  const hasStages = stageCount > 0
+  const canOpenStages = hasPlayers || hasStages
+
   return (
     <div className="mx-auto w-full max-w-[760px]">
       <div className="text-center lg:hidden">
@@ -58,14 +62,26 @@ export function GuestHome({
           Welcome
         </p>
         <h1 className="mt-1 max-w-[620px] text-[30px] font-black leading-[1.05] tracking-[-0.035em] text-neutral-950 sm:text-[34px]">
-          What do you want to set up{" "}
-          <span className="bg-[var(--arena-yellow)] px-1">
-            today?
-          </span>
+          {!hasPlayers ? (
+            <>
+              Start with building a{" "}
+              <span className="bg-[var(--arena-yellow)] px-1">
+                player list.
+              </span>
+            </>
+          ) : (
+            <>
+              What do you want to set up{" "}
+              <span className="bg-[var(--arena-yellow)] px-1">
+                today?
+              </span>
+            </>
+          )}
         </h1>
         <p className="mt-3 max-w-[620px] text-[15px] leading-6 text-slate-500">
-          Pick one to get started. Build your player list or create the next
-          stage of your tournament.
+          {!hasPlayers
+            ? "Add the players to your tournament roster. Once your player list is ready, you can create the first stage."
+            : "Pick one to get started. Build your player list or create the next stage of your tournament."}
         </p>
       </div>
 
@@ -73,7 +89,13 @@ export function GuestHome({
         <button
           type="button"
           onClick={onCreateStage}
-          className="flex min-h-[112px] items-center gap-4 rounded-[18px] border border-neutral-950 bg-white px-5 py-4 text-left sm:min-h-[176px] sm:flex-col sm:items-start sm:justify-between"
+          disabled={!canOpenStages}
+          className={[
+            "flex min-h-[112px] items-center gap-4 rounded-[18px] border px-5 py-4 text-left sm:min-h-[176px] sm:flex-col sm:items-start sm:justify-between",
+            canOpenStages
+              ? "border-neutral-950 bg-white"
+              : "cursor-not-allowed border-neutral-200 bg-neutral-100 opacity-55",
+          ].join(" ")}
         >
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] border border-neutral-950 bg-[var(--arena-yellow)] text-neutral-950">
             <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -90,9 +112,11 @@ export function GuestHome({
               Create a tournament&apos;s stage
             </strong>
             <span className="mt-1 block text-[13px] text-slate-500">
-              {stageCount > 0
-                ? `${stageCount} stage${stageCount === 1 ? "" : "s"} already created`
-                : "Set format, courts and rounds"}
+              {!hasPlayers && !hasStages
+                ? "Add players to the roster before creating a stage."
+                : stageCount > 0
+                  ? `${stageCount} stage${stageCount === 1 ? "" : "s"} already created`
+                  : "Set format, courts and rounds"}
             </span>
           </span>
         </button>
