@@ -23,8 +23,26 @@ function csvCell(value: unknown) {
   return `"${text.replaceAll('"', '""')}"`
 }
 
-function row(values: unknown[]) {
-  return values.map(csvCell).join(";")
+function csvTextCell(value: unknown) {
+  const text = value == null ? "" : String(value)
+  if (!text) return csvCell("")
+  return `"=""${text.replaceAll('"', '""')}"""`
+}
+
+type CsvTextValue = {
+  csvText: unknown
+}
+
+function row(values: Array<unknown | CsvTextValue>) {
+  return values
+    .map((value) =>
+      value &&
+      typeof value === "object" &&
+      "csvText" in value
+        ? csvTextCell(value.csvText)
+        : csvCell(value),
+    )
+    .join(";")
 }
 
 function safeFilePart(value: string) {
@@ -174,7 +192,7 @@ function matchRows(
         match.court_label ?? "",
         a,
         b,
-        scoreLabel(match),
+        { csvText: scoreLabel(match) },
         match.winner_side === "A"
           ? a
           : match.winner_side === "B"
