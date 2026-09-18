@@ -7,10 +7,24 @@ export const metadata: Metadata = {
 
 const email = "stefano@pickleballandstay.com";
 
+function BackToTournamentManager() {
+  return (
+    <a
+      href="/"
+      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-neutral-950 bg-[var(--arena-yellow)] px-4 text-sm font-black text-neutral-950 transition hover:brightness-95"
+    >
+      ← Back to Tournament Manager
+    </a>
+  );
+}
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-neutral-50 px-4 py-8 text-neutral-950 sm:px-6 sm:py-12">
       <article className="mx-auto max-w-3xl rounded-[18px] border border-neutral-200 bg-white p-5 shadow-sm sm:p-8">
+        <div className="mb-6">
+          <BackToTournamentManager />
+        </div>
         <header className="border-b border-neutral-200 pb-6">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
             Pickleball Arena Tournament Manager
@@ -26,6 +40,10 @@ export default function PrivacyPage() {
           <h2 className="mt-2 text-2xl font-black tracking-tight">Informativa sulla privacy</h2>
           <PolicyItalian />
         </section>
+
+        <div className="mt-10 border-t border-neutral-200 pt-6">
+          <BackToTournamentManager />
+        </div>
       </article>
     </main>
   );
